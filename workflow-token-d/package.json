@@ -1,0 +1,14 @@
+{
+  "name": "workflow-token-d",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "bunx cre-setup"
+  },
+  "dependencies": {
+    "@chainlink/cre-sdk": "latest",
+    "viem": "latest",
+    "zod": "latest"
+  }
+}

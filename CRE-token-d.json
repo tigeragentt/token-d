@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "workflow": {
+    "name": "token-d",
+    "description": "Reads ERC-20 token total supply from Ethereum Sepolia (EVM Read) and XDC Apothem (HTTP JSON-RPC), then shows distribution per chain.",
+    "created": true
+  },
+  "nodes": [
+    {
+      "id": "trg_1787592353286_0",
+      "type": "appNode",
+      "position": {
+        "x": 40,
+        "y": 40
+      },
+      "data": {
+        "kind": "trigger.cron",
+        "name": "Every 5 Minutes",
+        "description": "",
+        "scheduleType": "interval",
+        "intervalValue": 5,
+        "intervalUnit": "minutes",
+        "atHour": 9,
+        "atMinute": 0,
+        "daysOfWeek": [
+          1
+        ],
+        "dayOfMonth": 1,
+        "timezone": "UTC",
+        "cronExpression": "*/5 * * * *"
+      },
+      "width": 240,
+      "height": 103,
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "sc_1787592395633_1",
+      "type": "appNode",
+      "position": {
+        "x": 340,
+        "y": 320
+      },
+      "data": {
+        "kind": "smartContract",
+        "name": "MyToken",
+        "description": "Smart Contract reference",
+        "contractName": "MyToken",
+        "events": [],
+        "functions": [
+          "totalSupply"
+        ]
+      },
+      "width": 240,
+      "height": 127
+    },
+    {
+      "id": "cap_1787592395633_2",
+      "type": "appNode",
+      "position": {
+        "x": 340,
+        "y": 40
+      },
+      "data": {
+        "kind": "cap.evmRead",
+        "name": "totalSupply",
+        "description": "",
+        "smartContractName": "MyToken",
+        "functionName": "totalSupply",
+        "contractAddress": "0x71f40B90A8F4E68e6978467960Aee603a53b67fd",
+        "chainSelector": "ethereum-testnet-sepolia",
+        "blockSelection": "LatestFinalized"
+      },
+      "width": 240,
+      "height": 170,
+      "selected": false,
+      "dragging": false
+    },
+    {
+      "id": "web_1787592536714_5",
+      "type": "appNode",
+      "position": {
+        "x": 640,
+        "y": 190
+      },
+      "data": {
+        "kind": "website",
+        "name": "XDC Apothem RPC",
+        "description": "Website API reference",
+        "websiteName": "XDC Apothem RPC",
+        "apiUrls": [
+          "https://rpc.apothem.network"
+        ]
+      },
+      "width": 240,
+      "height": 126
+    },
+    {
+      "id": "cap_1787592536714_6",
+      "type": "appNode",
+      "position": {
+        "x": 640,
+        "y": 40
+      },
+      "data": {
+        "kind": "cap.http.request",
+        "name": "XDC Apothem RPC",
+        "description": "Calls XDC Apothem JSON-RPC to read totalSupply() on token 0xEFc0864bF40832Bb2189203b66810948d05dfAb8 via eth_call",
+        "method": "POST",
+        "websiteName": "XDC Apothem RPC",
+        "apiUrl": "https://rpc.apothem.network",
+        "cacheEnabled": true,
+        "cacheMaxAgeMs": 60000
+      },
+      "width": 240,
+      "height": 148
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_1787592395633_3",
+      "source": "trg_1787592353286_0",
+      "target": "cap_1787592395633_2",
+      "type": "smoothstep",
+      "data": {
+        "kind": "callback"
+      },
+      "className": "edge edge--callback"
+    },
+    {
+      "id": "e_1787592395633_4",
+      "source": "cap_1787592395633_2",
+      "target": "sc_1787592395633_1",
+      "sourceHandle": "refSource",
+      "targetHandle": "refTarget",
+      "type": "straight",
+      "data": {
+        "kind": "ref"
+      },
+      "className": "edge edge--ref"
+    },
+    {
+      "id": "e_1787592536714_7",
+      "source": "cap_1787592395633_2",
+      "target": "cap_1787592536714_6",
+      "type": "smoothstep",
+      "data": {
+        "kind": "callback"
+      },
+      "className": "edge edge--callback"
+    },
+    {
+      "id": "e_1787592536714_8",
+      "source": "cap_1787592536714_6",
+      "target": "web_1787592536714_5",
+      "sourceHandle": "refSource",
+      "targetHandle": "refTarget",
+      "type": "straight",
+      "data": {
+        "kind": "ref"
+      },
+      "className": "edge edge--ref"
+    }
+  ],
+  "selectedId": "cap_1787592536714_6",
+  "idCounter": 9
+}
