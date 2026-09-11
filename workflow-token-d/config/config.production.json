@@ -1,6 +1,6 @@
 {
   "schedule": "0 */5 * * * *",
-  "sepoliaTokenAddress": "0x326baD54071c50830B1EF2C00d160f511fd2E39e",
-  "xdcTokenAddress": "0x85ec3EB6Caad348aeC8CF3Ada0Da494c641C1E1b",
+  "sepoliaTokenAddress": "0xCdb840cc3cfc53dc94BC427D657A4E9D47B44cE4",
+  "xdcTokenAddress": "0xD262aF97A79F7AbFF1a1Ff301a0464dBF242Dbe9",
   "xdcRpcUrl": "https://rpc.apothem.network"
 }
