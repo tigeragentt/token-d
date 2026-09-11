@@ -9,6 +9,13 @@ A Chainlink CRE workflow that tracks cross-chain token supply distribution betwe
 - Computes the combined total supply and each chain's percentage
 - Returns and logs the result as JSON every 5 minutes
 
+## Smart Contract Addresses
+
+| Network | Address | Explorer |
+|---|---|---|
+| Ethereum Sepolia | `0x326baD54071c50830B1EF2C00d160f511fd2E39e` | [View on Etherscan ✅](https://sepolia.etherscan.io/address/0x326baD54071c50830B1EF2C00d160f511fd2E39e#code) |
+| XDC Apothem | `0x85ec3EB6Caad348aeC8CF3Ada0Da494c641C1E1b` | [View on XDCScan](https://apothem.xdcscan.io/address/0x85ec3EB6Caad348aeC8CF3Ada0Da494c641C1E1b) |
+
 ## Prerequisites
 
 - [Bun](https://bun.sh) — `npm install -g bun`
