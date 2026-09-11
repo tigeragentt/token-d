@@ -102,7 +102,7 @@ export default function ReadFunction({
   const prefilled = (i) => prefillArgs?.[i] !== null && prefillArgs?.[i] !== undefined && prefillArgs?.[i] !== ''
 
   const resultEl = result !== null
-    ? <div className={`fn-result ${status}`} style={inline ? { margin: 0, flex: '0 0 auto', minWidth: 120, maxWidth: 260 } : {}}>{result}</div>
+    ? <div className={`fn-result ${status}`} style={inline ? { margin: 0, height: '100%', display: 'flex', alignItems: 'center' } : {}}>{result}</div>
     : null
 
   return (
@@ -112,34 +112,50 @@ export default function ReadFunction({
         <span className="fn-badge read">read</span>
       </div>
 
-      {/* inline layout: inputs + button + result all in one row */}
+      {/* inline layout: left 50% = inputs + button, right 50% = result */}
       {inline ? (
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
-          {inputs.map((inp, i) => (
-            <div key={i} className="fn-input-group" style={{ flex: '1 1 180px' }}>
-              <label className="fn-input-label">
-                {inp.name} <span style={{ color: '#4fa3ff' }}>({inp.type})</span>
-                {prefilled(i) && <span style={{ color: 'var(--green)', marginLeft: 6, fontSize: 10 }}>● auto</span>}
-              </label>
-              <input
-                className="fn-input"
-                style={{ minWidth: 0, width: '100%' }}
-                placeholder={inp.type}
-                value={args[i]}
-                onChange={e => { const next = [...args]; next[i] = e.target.value; setArgs(next) }}
-                onKeyDown={e => e.key === 'Enter' && call()}
-              />
-            </div>
-          ))}
-          <button
-            className="btn btn-secondary btn-sm"
-            style={{ flexShrink: 0 }}
-            onClick={() => call()}
-            disabled={status === 'loading'}
-          >
-            {status === 'loading' ? <><span className="spinner" />…</> : 'Call'}
-          </button>
-          {resultEl}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
+          <div style={{ flex: '0 0 50%', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end' }}>
+            {inputs.map((inp, i) => (
+              <div key={i} className="fn-input-group" style={{ flex: '1 1 150px', minWidth: 0 }}>
+                <label className="fn-input-label">
+                  {inp.name} <span style={{ color: '#4fa3ff' }}>({inp.type})</span>
+                  {prefilled(i) && <span style={{ color: 'var(--green)', marginLeft: 6, fontSize: 10 }}>● auto</span>}
+                </label>
+                <input
+                  className="fn-input"
+                  style={{ minWidth: 0, width: '100%' }}
+                  placeholder={inp.type}
+                  value={args[i]}
+                  onChange={e => { const next = [...args]; next[i] = e.target.value; setArgs(next) }}
+                  onKeyDown={e => e.key === 'Enter' && call()}
+                />
+              </div>
+            ))}
+            <button
+              className="btn btn-secondary btn-sm"
+              style={{ flexShrink: 0, alignSelf: 'flex-end' }}
+              onClick={() => call()}
+              disabled={status === 'loading'}
+            >
+              {status === 'loading' ? <><span className="spinner" />…</> : 'Call'}
+            </button>
+          </div>
+          <div style={{
+            flex: '0 0 calc(50% - 12px)',
+            background: 'var(--bg)',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            padding: '8px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            minHeight: 36,
+          }}>
+            {result !== null
+              ? <span className={`fn-result ${status}`} style={{ margin: 0, padding: 0, background: 'none', border: 'none', borderRadius: 0, fontSize: 13 }}>{result}</span>
+              : <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>—</span>
+            }
+          </div>
         </div>
       ) : (
         <>
