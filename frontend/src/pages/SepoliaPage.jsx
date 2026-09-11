@@ -2,24 +2,16 @@ import { ethers } from 'ethers'
 import { SEPOLIA_ADDRESS, SEPOLIA_RPC, SEPOLIA_NETWORK_PARAMS } from '../config.js'
 import { useWallet } from '../context/WalletContext.jsx'
 import TokenInfoPanel from '../components/TokenInfoPanel.jsx'
-import StatusBlock from '../components/StatusBlock.jsx'
 import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
 
-const READ_FNS = [
-  'balanceOf', 'isVerified', 'isFrozen', 'getFrozenTokens',
-  'allowance', 'hasRole',
-]
+const READ_FNS = ['balanceOf', 'getFrozenTokens', 'allowance', 'hasRole']
 
-const WRITE_FNS = [
-  'transfer', 'approve', 'transferFrom',
-  'mint', 'burn',
-  'pause', 'unpause',
-  'registerIdentity', 'revokeIdentity',
-  'setAddressFrozen', 'freezePartialTokens', 'unfreezePartialTokens',
-  'forcedTransfer', 'recoveryAddress',
-  'grantRole', 'revokeRole',
-]
+const USER_FNS  = ['transfer', 'approve', 'transferFrom']
+const AGENT_FNS = ['mint', 'burn', 'pause', 'unpause', 'registerIdentity', 'revokeIdentity',
+                   'setAddressFrozen', 'freezePartialTokens', 'unfreezePartialTokens',
+                   'forcedTransfer', 'recoveryAddress']
+const OWNER_FNS = ['grantRole', 'revokeRole']
 
 const readProvider = new ethers.JsonRpcProvider(SEPOLIA_RPC)
 
@@ -48,35 +40,42 @@ export default function SepoliaPage() {
       )}
 
       <TokenInfoPanel provider={readProvider} contractAddress={SEPOLIA_ADDRESS} />
-      <StatusBlock provider={readProvider} contractAddress={SEPOLIA_ADDRESS} />
 
       <div className="section-label">Query Functions</div>
       <div className="fn-list">
         {READ_FNS.map(fn => (
-          <ReadFunction
-            key={fn}
-            fnName={fn}
-            provider={readProvider}
-            contractAddress={SEPOLIA_ADDRESS}
-            showRaw={false}
-          />
+          <ReadFunction key={fn} fnName={fn} provider={readProvider}
+            contractAddress={SEPOLIA_ADDRESS} showRaw={false} />
         ))}
       </div>
 
-      <div className="section-label">Write Functions</div>
-      {!account && (
-        <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 12 }}>
-          Connect MetaMask to enable write functions.
-        </p>
-      )}
+      <div className="section-label">User Functions</div>
+      <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
+        Any verified address — transfer, approve
+      </p>
       <div className="fn-list">
-        {WRITE_FNS.map(fn => (
-          <WriteFunction
-            key={fn}
-            fnName={fn}
-            signer={signer}
-            contractAddress={SEPOLIA_ADDRESS}
-          />
+        {USER_FNS.map(fn => (
+          <WriteFunction key={fn} fnName={fn} signer={signer} contractAddress={SEPOLIA_ADDRESS} />
+        ))}
+      </div>
+
+      <div className="section-label">Agent Functions</div>
+      <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
+        Requires <code>AGENT_ROLE</code> — mint, burn, identity, freeze, pause
+      </p>
+      <div className="fn-list">
+        {AGENT_FNS.map(fn => (
+          <WriteFunction key={fn} fnName={fn} signer={signer} contractAddress={SEPOLIA_ADDRESS} />
+        ))}
+      </div>
+
+      <div className="section-label">Owner Functions</div>
+      <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
+        Requires <code>DEFAULT_ADMIN_ROLE</code> — role management
+      </p>
+      <div className="fn-list">
+        {OWNER_FNS.map(fn => (
+          <WriteFunction key={fn} fnName={fn} signer={signer} contractAddress={SEPOLIA_ADDRESS} />
         ))}
       </div>
     </div>
