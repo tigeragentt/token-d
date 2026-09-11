@@ -15,7 +15,8 @@ const AGENT_FNS = [
   'forcedTransfer', 'recoveryAddress',
 ]
 
-const OWNER_FNS = ['grantRole', 'revokeRole']
+const OWNER_READ_FNS  = ['hasRole']
+const OWNER_WRITE_FNS = ['grantRole', 'revokeRole']
 
 const readProvider = new ethers.JsonRpcProvider(SEPOLIA_RPC)
 
@@ -77,7 +78,11 @@ export default function SepoliaPage() {
         Requires <code>DEFAULT_ADMIN_ROLE</code> — role management
       </p>
       <div className="fn-list">
-        {OWNER_FNS.map(fn => (
+        {OWNER_READ_FNS.map(fn => (
+          <ReadFunction key={fn} fnName={fn} provider={readProvider}
+            contractAddress={SEPOLIA_ADDRESS} showRaw={false} />
+        ))}
+        {OWNER_WRITE_FNS.map(fn => (
           <WriteFunction key={fn} fnName={fn} signer={signer} contractAddress={SEPOLIA_ADDRESS} />
         ))}
       </div>
