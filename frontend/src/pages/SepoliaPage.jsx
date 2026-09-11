@@ -6,8 +6,6 @@ import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
 import RoleSelector from '../components/RoleSelector.jsx'
 
-const OWNER_READ_FNS  = ['hasRole']
-const OWNER_WRITE_FNS = ['grantRole', 'revokeRole']
 
 const readProvider = new ethers.JsonRpcProvider(SEPOLIA_RPC)
 
@@ -91,15 +89,19 @@ export default function SepoliaPage() {
       <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
         Requires <code>DEFAULT_ADMIN_ROLE</code> — role management
       </p>
-      <RoleSelector />
       <div className="fn-list">
-        {OWNER_READ_FNS.map(fn => (
-          <ReadFunction key={fn} fnName={fn} provider={readProvider}
-            contractAddress={SEPOLIA_ADDRESS} showRaw={false} />
-        ))}
-        {OWNER_WRITE_FNS.map(fn => (
-          <WriteFunction key={fn} fnName={fn} signer={signer} contractAddress={SEPOLIA_ADDRESS} />
-        ))}
+        {/* roles list | hasRole — same line */}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
+          <div style={{ flex: '1 1 0', minWidth: 0 }}>
+            <RoleSelector />
+          </div>
+          <div style={{ flex: '1 1 0', minWidth: 0 }}>
+            <ReadFunction fnName="hasRole" provider={readProvider}
+              contractAddress={SEPOLIA_ADDRESS} showRaw={false} />
+          </div>
+        </div>
+        {/* grantRole | revokeRole — same line */}
+        <FnPair a="grantRole" b="revokeRole" signer={signer} address={SEPOLIA_ADDRESS} />
       </div>
     </div>
   )
