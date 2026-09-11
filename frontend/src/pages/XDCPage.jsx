@@ -4,6 +4,7 @@ import { useWallet } from '../context/WalletContext.jsx'
 import TokenInfoPanel from '../components/TokenInfoPanel.jsx'
 import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
+import RoleSelector from '../components/RoleSelector.jsx'
 
 const USER_READ_FNS  = ['balanceOf', 'allowance', 'isVerified', 'isFrozen']
 const USER_WRITE_FNS = ['transfer', 'approve', 'transferFrom']
@@ -82,6 +83,7 @@ export default function XDCPage() {
       <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
         Requires <code>DEFAULT_ADMIN_ROLE</code> — role management
       </p>
+      <RoleSelector />
       <div className="fn-list">
         {OWNER_READ_FNS.map(fn => (
           <ReadFunction key={fn} fnName={fn} provider={readProvider}
