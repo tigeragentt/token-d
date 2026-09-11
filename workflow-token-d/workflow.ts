@@ -125,7 +125,8 @@ export const onCronTrigger = (runtime: Runtime<Config>): string => {
   return JSON.stringify(result)
 }
 
-export const initWorkflow = (config: Config) => {
+export const initWorkflow = (config: unknown) => {
+  const cfg = config as Config
   const cron = new CronCapability()
-  return [handler(cron.trigger({ schedule: config.schedule }), onCronTrigger)]
+  return [handler(cron.trigger({ schedule: cfg.schedule }), onCronTrigger)]
 }
