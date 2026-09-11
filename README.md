@@ -14,7 +14,7 @@ A Chainlink CRE workflow that tracks cross-chain token supply distribution betwe
 | Network | Address | Explorer |
 |---|---|---|
 | Ethereum Sepolia | `0xCdb840cc3cfc53dc94BC427D657A4E9D47B44cE4` | [View on Etherscan ✅](https://sepolia.etherscan.io/address/0xCdb840cc3cfc53dc94BC427D657A4E9D47B44cE4#code) |
-| XDC Apothem | `0xD262aF97A79F7AbFF1a1Ff301a0464dBF242Dbe9` | [View on XDCScan](https://apothem.xdcscan.io/address/0xD262aF97A79F7AbFF1a1Ff301a0464dBF242Dbe9) |
+| XDC Apothem | `0xD262aF97A79F7AbFF1a1Ff301a0464dBF242Dbe9` | [View on XDCScan ✅](https://testnet.xdcscan.com/address/0xD262aF97A79F7AbFF1a1Ff301a0464dBF242Dbe9) |
 
 ## Prerequisites
 
@@ -81,7 +81,7 @@ cre workflow deploy \
 Submit via the Blockscout API:
 
 ```bash
-POST https://apothem.xdcscan.io/api/v2/smart-contracts/0xD262aF97A79F7AbFF1a1Ff301a0464dBF242Dbe9/verification/via/flattened-code
+POST https://testnet.xdcscan.com/api/v2/smart-contracts/0xD262aF97A79F7AbFF1a1Ff301a0464dBF242Dbe9/verification/via/flattened-code
 ```
 
 | Parameter | Value |
