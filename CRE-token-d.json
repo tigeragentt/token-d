@@ -67,7 +67,7 @@
         "description": "",
         "smartContractName": "MyToken",
         "functionName": "totalSupply",
-        "contractAddress": "0x71f40B90A8F4E68e6978467960Aee603a53b67fd",
+        "contractAddress": "0x326baD54071c50830B1EF2C00d160f511fd2E39e",
         "chainSelector": "ethereum-testnet-sepolia",
         "blockSelection": "LatestFinalized"
       },
@@ -105,7 +105,7 @@
       "data": {
         "kind": "cap.http.request",
         "name": "XDC Apothem RPC",
-        "description": "Calls XDC Apothem JSON-RPC to read totalSupply() on token 0xEFc0864bF40832Bb2189203b66810948d05dfAb8 via eth_call",
+        "description": "Calls XDC Apothem JSON-RPC to read totalSupply() on token 0x85ec3EB6Caad348aeC8CF3Ada0Da494c641C1E1b via eth_call",
         "method": "POST",
         "websiteName": "XDC Apothem RPC",
         "apiUrl": "https://rpc.apothem.network",
