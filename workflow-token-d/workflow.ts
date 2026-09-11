@@ -59,10 +59,13 @@ const readSepoliaSupply = (runtime: Runtime<Config>): bigint => {
     })
     .result()
 
+  const hexData = bytesToHex(result.data)
+  if (!hexData || hexData === "0x")
+    throw new Error(`Sepolia call returned empty data — verify contract exists at ${runtime.config.sepoliaTokenAddress} on Sepolia`)
   const supply = decodeFunctionResult({
     abi: erc20Abi,
     functionName: "totalSupply",
-    data: bytesToHex(result.data),
+    data: hexData,
   }) as bigint
   return supply
 }
