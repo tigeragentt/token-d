@@ -2,7 +2,6 @@ import {
   CronCapability,
   EVMClient,
   HTTPClient,
-  LAST_FINALIZED_BLOCK_NUMBER,
   bytesToBase64,
   bytesToHex,
   consensusIdenticalAggregation,
@@ -55,7 +54,6 @@ const readSepoliaSupply = (runtime: Runtime<Config>): bigint => {
         to: runtime.config.sepoliaTokenAddress as Address,
         data: callData,
       }),
-      blockNumber: LAST_FINALIZED_BLOCK_NUMBER,
     })
     .result()
 
