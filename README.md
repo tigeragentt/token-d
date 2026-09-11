@@ -74,6 +74,27 @@ cre workflow deploy \
 | `xdcTokenAddress` | Token contract address on XDC Apothem |
 | `xdcRpcUrl` | XDC JSON-RPC endpoint |
 
+## To Do
+
+### Verify TokenD on XDC Apothem block explorer
+
+`apothem.xdcscan.io` API was down (Cloudflare 521) when verification was attempted. Once it recovers, submit via the Blockscout API:
+
+```bash
+POST https://apothem.xdcscan.io/api/v2/smart-contracts/0x85ec3EB6Caad348aeC8CF3Ada0Da494c641C1E1b/verification/via/flattened-code
+```
+
+| Parameter | Value |
+|---|---|
+| Contract address | `0x85ec3EB6Caad348aeC8CF3Ada0Da494c641C1E1b` |
+| Contract name | `TokenD` |
+| Compiler version | `v0.8.36+commit.8d97d7ba` |
+| EVM version | `cancun` |
+| Optimizer | disabled |
+| Flattened source | `smart-contracts/tokenD_flat.sol` |
+
+---
+
 ## Project structure
 
 ```
