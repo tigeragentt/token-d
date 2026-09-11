@@ -6,16 +6,12 @@ import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
 import RoleSelector from '../components/RoleSelector.jsx'
 
-const USER_READ_FNS  = ['balanceOf', 'allowance', 'isVerified', 'isFrozen']
-const USER_WRITE_FNS = ['transfer', 'approve', 'transferFrom']
-
 const AGENT_FNS = [
   'mint', 'burn', 'pause', 'unpause',
   'registerIdentity', 'revokeIdentity',
   'setAddressFrozen', 'freezePartialTokens', 'unfreezePartialTokens',
   'forcedTransfer', 'recoveryAddress',
 ]
-
 const OWNER_READ_FNS  = ['hasRole']
 const OWNER_WRITE_FNS = ['grantRole', 'revokeRole']
 
@@ -35,11 +31,8 @@ export default function SepoliaPage() {
       {!account && (
         <div className="alert alert-info">
           Read functions work without a wallet. Connect MetaMask (top right) on Sepolia to use write functions.
-          <button
-            className="btn btn-primary btn-sm"
-            style={{ marginLeft: 12 }}
-            onClick={() => connect(SEPOLIA_NETWORK_PARAMS)}
-          >
+          <button className="btn btn-primary btn-sm" style={{ marginLeft: 12 }}
+            onClick={() => connect(SEPOLIA_NETWORK_PARAMS)}>
             Connect &amp; switch to Sepolia
           </button>
         </div>
@@ -50,16 +43,22 @@ export default function SepoliaPage() {
       {/* ── User ── */}
       <div className="section-label">User</div>
       <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
-        Any verified address — read balance/allowance/status, transfer, approve
+        Any verified address — balance, allowance, status, transfer, approve
       </p>
       <div className="fn-list">
-        {USER_READ_FNS.map(fn => (
-          <ReadFunction key={fn} fnName={fn} provider={readProvider}
-            contractAddress={SEPOLIA_ADDRESS} showRaw={false} />
-        ))}
-        {USER_WRITE_FNS.map(fn => (
-          <WriteFunction key={fn} fnName={fn} signer={signer} contractAddress={SEPOLIA_ADDRESS} />
-        ))}
+        {/* auto-fill with connected wallet */}
+        <ReadFunction fnName="balanceOf" provider={readProvider} contractAddress={SEPOLIA_ADDRESS}
+          showRaw={false} prefillArgs={[account]} autoCall={!!account} />
+        <ReadFunction fnName="allowance" provider={readProvider} contractAddress={SEPOLIA_ADDRESS}
+          showRaw={false} prefillArgs={[account, null]} />
+
+        {/* require manual address */}
+        <ReadFunction fnName="isVerified" provider={readProvider} contractAddress={SEPOLIA_ADDRESS} showRaw={false} />
+        <ReadFunction fnName="isFrozen"   provider={readProvider} contractAddress={SEPOLIA_ADDRESS} showRaw={false} />
+
+        <WriteFunction fnName="transfer"     signer={signer} contractAddress={SEPOLIA_ADDRESS} />
+        <WriteFunction fnName="approve"      signer={signer} contractAddress={SEPOLIA_ADDRESS} />
+        <WriteFunction fnName="transferFrom" signer={signer} contractAddress={SEPOLIA_ADDRESS} />
       </div>
 
       {/* ── Agent ── */}

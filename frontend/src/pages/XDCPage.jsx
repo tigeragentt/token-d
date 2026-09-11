@@ -6,16 +6,12 @@ import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
 import RoleSelector from '../components/RoleSelector.jsx'
 
-const USER_READ_FNS  = ['balanceOf', 'allowance', 'isVerified', 'isFrozen']
-const USER_WRITE_FNS = ['transfer', 'approve', 'transferFrom']
-
 const AGENT_FNS = [
   'mint', 'burn', 'pause', 'unpause',
   'registerIdentity', 'revokeIdentity',
   'setAddressFrozen', 'freezePartialTokens', 'unfreezePartialTokens',
   'forcedTransfer', 'recoveryAddress',
 ]
-
 const OWNER_READ_FNS  = ['hasRole']
 const OWNER_WRITE_FNS = ['grantRole', 'revokeRole']
 
@@ -37,11 +33,8 @@ export default function XDCPage() {
         {!account && (
           <>
             {' '}Write functions require MetaMask on XDC Apothem.{' '}
-            <button
-              className="btn btn-primary btn-sm"
-              style={{ marginLeft: 8 }}
-              onClick={() => connect(XDC_NETWORK_PARAMS)}
-            >
+            <button className="btn btn-primary btn-sm" style={{ marginLeft: 8 }}
+              onClick={() => connect(XDC_NETWORK_PARAMS)}>
               Connect &amp; switch to XDC
             </button>
           </>
@@ -55,16 +48,22 @@ export default function XDCPage() {
       {/* ── User ── */}
       <div className="section-label">User</div>
       <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
-        Any verified address — read balance/allowance/status, transfer, approve
+        Any verified address — balance, allowance, status, transfer, approve
       </p>
       <div className="fn-list">
-        {USER_READ_FNS.map(fn => (
-          <ReadFunction key={fn} fnName={fn} provider={readProvider}
-            contractAddress={XDC_ADDRESS} showRaw={true} />
-        ))}
-        {USER_WRITE_FNS.map(fn => (
-          <WriteFunction key={fn} fnName={fn} signer={signer} contractAddress={XDC_ADDRESS} />
-        ))}
+        {/* auto-fill with connected wallet */}
+        <ReadFunction fnName="balanceOf" provider={readProvider} contractAddress={XDC_ADDRESS}
+          showRaw={true} prefillArgs={[account]} autoCall={!!account} />
+        <ReadFunction fnName="allowance" provider={readProvider} contractAddress={XDC_ADDRESS}
+          showRaw={true} prefillArgs={[account, null]} />
+
+        {/* require manual address */}
+        <ReadFunction fnName="isVerified" provider={readProvider} contractAddress={XDC_ADDRESS} showRaw={true} />
+        <ReadFunction fnName="isFrozen"   provider={readProvider} contractAddress={XDC_ADDRESS} showRaw={true} />
+
+        <WriteFunction fnName="transfer"     signer={signer} contractAddress={XDC_ADDRESS} />
+        <WriteFunction fnName="approve"      signer={signer} contractAddress={XDC_ADDRESS} />
+        <WriteFunction fnName="transferFrom" signer={signer} contractAddress={XDC_ADDRESS} />
       </div>
 
       {/* ── Agent ── */}
