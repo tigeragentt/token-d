@@ -2,3 +2,5 @@
 node_modules/
 dist/
 *.wasm
+smart-contracts/artifacts/
+smart-contracts/cache/

@@ -18,15 +18,23 @@ A Chainlink CRE workflow that tracks cross-chain token supply distribution betwe
 
 ## Prerequisites
 
-- [Bun](https://bun.sh) — `npm install -g bun`
-- [CRE CLI](https://docs.chain.link/chainlink-automation/concepts/automation-architecture) — `npm install -g @chainlink/cre-cli`
-- A funded CRE account with a private key in `secrets.yaml`
+- **Git** - [Download here](https://git-scm.com/downloads)
+- **Node.js v20 or later** - [Download here](https://nodejs.org/)
+- **Bun v1.3 or later** - [Download here](https://bun.sh/docs/installation)
+- **CRE CLI** - [Installation guide](https://docs.chain.link/cre/getting-started/cli-installation)
+- **CRE account** - Sign up at [cre.chain.link](https://cre.chain.link) and complete `cre login` (see [CRE CLI Quick Setup](./cre-cli-setup.md))
+
+### Optional (only needed for the onchain part)
+
+- Add Networks to your wallet
+  - **Ethereum Sepolia** - [Add it here](https://chainlist.org/chain/11155111)
+- **Get Sepolia ETH from a faucet**
+
 
 ## Install
 
 ```bash
-cd workflow-token-d
-bun install
+bun install --cwd ./workflow-token-d
 ```
 
 `bun install` runs `cre-setup` automatically via the `postinstall` hook.
@@ -39,30 +47,6 @@ cre workflow simulate workflow-token-d --target staging-settings
 
 Run from the **project root** (`token-d/`), not from inside the workflow folder. No secrets required for simulation.
 
-## Deploy
-
-### Staging
-
-```bash
-cd workflow-token-d
-cre workflow deploy \
-  --workflow-path ./main.ts \
-  --config-path ./config/config.staging.json \
-  --secrets-path ../secrets.yaml \
-  --workflow-name token-d-staging
-```
-
-### Production
-
-```bash
-cd workflow-token-d
-cre workflow deploy \
-  --workflow-path ./main.ts \
-  --config-path ./config/config.production.json \
-  --secrets-path ../secrets.yaml \
-  --workflow-name token-d-production
-```
-
 ## Configuration
 
 `config/config.staging.json` (and `config.production.json`) hold the workflow parameters:
@@ -74,24 +58,6 @@ cre workflow deploy \
 | `xdcTokenAddress` | Token contract address on XDC Apothem |
 | `xdcRpcUrl` | XDC JSON-RPC endpoint |
 
-## To Do
-
-### Verify TokenD on XDC Apothem block explorer
-
-Submit via the Blockscout API:
-
-```bash
-POST https://testnet.xdcscan.com/api/v2/smart-contracts/0xD262aF97A79F7AbFF1a1Ff301a0464dBF242Dbe9/verification/via/flattened-code
-```
-
-| Parameter | Value |
-|---|---|
-| Contract address | `0xD262aF97A79F7AbFF1a1Ff301a0464dBF242Dbe9` |
-| Contract name | `TokenD` |
-| Compiler version | `v0.8.36+commit.8d97d7ba` |
-| EVM version | `cancun` |
-| Optimizer | disabled |
-| Flattened source | `smart-contracts/tokenD_flat.sol` |
 
 ---
 
