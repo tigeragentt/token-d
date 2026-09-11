@@ -3,12 +3,13 @@ import { ethers } from 'ethers'
 import { TOKEN_ABI } from '../abi.js'
 import { normaliseAddress } from '../config.js'
 
-export default function WriteFunction({ fnName, signer, contractAddress }) {
+export default function WriteFunction({ fnName, signer, contractAddress, inputOptions = {} }) {
   const abiEntry = TOKEN_ABI.find(e => e.name === fnName && e.stateMutability === 'nonpayable')
     || TOKEN_ABI.find(e => e.name === fnName)
   const inputs = abiEntry?.inputs || []
 
   const [args, setArgs] = useState(inputs.map(() => ''))
+  const [picks, setPicks] = useState(inputs.map(() => ''))
   const [result, setResult] = useState(null)
   const [status, setStatus] = useState('idle')
 
@@ -60,16 +61,43 @@ export default function WriteFunction({ fnName, signer, contractAddress }) {
                 {inp.name} <span style={{color:'var(--accent)'}}>({inp.type})</span>
                 {inp.type.includes('[]') && <span style={{color:'var(--text-dim)',marginLeft:4}}>(comma-separated)</span>}
               </label>
-              <input
-                className="fn-input"
-                placeholder={inp.type}
-                value={args[i]}
-                onChange={e => {
-                  const next = [...args]
-                  next[i] = e.target.value
-                  setArgs(next)
-                }}
-              />
+              {inputOptions[i] ? (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <select
+                    className="fn-input"
+                    style={{ flex: '0 0 150px', width: 150, minWidth: 0, cursor: 'pointer' }}
+                    value={picks[i]}
+                    onChange={e => {
+                      const opt = inputOptions[i].find(o => o.label === e.target.value)
+                      const nextPicks = [...picks]; nextPicks[i] = e.target.value; setPicks(nextPicks)
+                      if (opt) { const next = [...args]; next[i] = opt.value; setArgs(next) }
+                    }}
+                  >
+                    <option value="">— role name —</option>
+                    {inputOptions[i].map(opt => (
+                      <option key={opt.label} value={opt.label}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <input
+                    className="fn-input"
+                    style={{ flex: 1, minWidth: 0 }}
+                    placeholder="role (bytes32)"
+                    value={args[i]}
+                    onChange={e => { const next = [...args]; next[i] = e.target.value; setArgs(next) }}
+                  />
+                </div>
+              ) : (
+                <input
+                  className="fn-input"
+                  placeholder={inp.type}
+                  value={args[i]}
+                  onChange={e => {
+                    const next = [...args]
+                    next[i] = e.target.value
+                    setArgs(next)
+                  }}
+                />
+              )}
             </div>
           ))}
         </div>

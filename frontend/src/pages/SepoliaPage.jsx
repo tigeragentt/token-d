@@ -4,19 +4,20 @@ import { useWallet } from '../context/WalletContext.jsx'
 import TokenInfoPanel from '../components/TokenInfoPanel.jsx'
 import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
-import RoleSelector from '../components/RoleSelector.jsx'
+import { ROLES } from '../components/RoleSelector.jsx'
 
+const ROLE_OPTIONS = { 0: ROLES.map(r => ({ label: r.name, value: r.bytes32 })) }
 
 const readProvider = new ethers.JsonRpcProvider(SEPOLIA_RPC)
 
-function FnPair({ a, b, signer, address }) {
+function FnPair({ a, b, signer, address, inputOptions = {} }) {
   return (
     <div style={{ display: 'flex', gap: 12 }}>
       <div style={{ flex: '1 1 0', minWidth: 0 }}>
-        <WriteFunction fnName={a} signer={signer} contractAddress={address} />
+        <WriteFunction fnName={a} signer={signer} contractAddress={address} inputOptions={inputOptions} />
       </div>
       <div style={{ flex: '1 1 0', minWidth: 0 }}>
-        <WriteFunction fnName={b} signer={signer} contractAddress={address} />
+        <WriteFunction fnName={b} signer={signer} contractAddress={address} inputOptions={inputOptions} />
       </div>
     </div>
   )
@@ -81,7 +82,8 @@ export default function SepoliaPage() {
         <FnPair a="registerIdentity" b="revokeIdentity"         signer={signer} address={SEPOLIA_ADDRESS} />
         <FnPair a="freezePartialTokens" b="unfreezePartialTokens" signer={signer} address={SEPOLIA_ADDRESS} />
         <WriteFunction fnName="setAddressFrozen" signer={signer} contractAddress={SEPOLIA_ADDRESS} />
-        <FnPair a="forcedTransfer"   b="recoveryAddress"        signer={signer} address={SEPOLIA_ADDRESS} />
+        <WriteFunction fnName="forcedTransfer"  signer={signer} contractAddress={SEPOLIA_ADDRESS} />
+        <WriteFunction fnName="recoveryAddress" signer={signer} contractAddress={SEPOLIA_ADDRESS} />
       </div>
 
       {/* ── Owner ── */}
@@ -90,18 +92,10 @@ export default function SepoliaPage() {
         Requires <code>DEFAULT_ADMIN_ROLE</code> — role management
       </p>
       <div className="fn-list">
-        {/* roles list | hasRole — same line */}
-        <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
-          <div style={{ flex: '1 1 0', minWidth: 0 }}>
-            <RoleSelector />
-          </div>
-          <div style={{ flex: '1 1 0', minWidth: 0 }}>
-            <ReadFunction fnName="hasRole" provider={readProvider}
-              contractAddress={SEPOLIA_ADDRESS} showRaw={false} />
-          </div>
-        </div>
-        {/* grantRole | revokeRole — same line */}
-        <FnPair a="grantRole" b="revokeRole" signer={signer} address={SEPOLIA_ADDRESS} />
+        <ReadFunction fnName="hasRole" provider={readProvider}
+          contractAddress={SEPOLIA_ADDRESS} showRaw={false} inputOptions={ROLE_OPTIONS} />
+        <FnPair a="grantRole" b="revokeRole" signer={signer} address={SEPOLIA_ADDRESS}
+          inputOptions={ROLE_OPTIONS} />
       </div>
     </div>
   )

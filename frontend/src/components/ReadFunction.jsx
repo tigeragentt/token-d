@@ -18,15 +18,17 @@ function formatResult(fnName, value) {
 export default function ReadFunction({
   fnName, provider, contractAddress,
   showRaw = false,
-  prefillArgs = null,  // array matching inputs; null slots = empty
-  autoCall = false,    // if true, call automatically when all prefills are set
-  inline = false,      // show result on the right instead of below
+  prefillArgs = null,
+  autoCall = false,
+  inline = false,
+  inputOptions = {},   // { [inputIndex]: [{label, value}] } — quick-pick dropdown for that input
 }) {
   const abiEntry = TOKEN_ABI.find(e => e.name === fnName && (e.stateMutability === 'view' || e.stateMutability === 'pure'))
     || TOKEN_ABI.find(e => e.name === fnName)
   const inputs = abiEntry?.inputs || []
 
   const [args, setArgs] = useState(inputs.map((_, i) => prefillArgs?.[i] ?? ''))
+  const [picks, setPicks] = useState(inputs.map(() => ''))
   const [result, setResult] = useState(null)
   const [status, setStatus] = useState('idle')
   const [rawReq, setRawReq] = useState(null)
@@ -167,12 +169,39 @@ export default function ReadFunction({
                     {inp.name} <span style={{ color: '#4fa3ff' }}>({inp.type})</span>
                     {prefilled(i) && <span style={{ color: 'var(--green)', marginLeft: 6, fontSize: 10 }}>● auto</span>}
                   </label>
-                  <input
-                    className="fn-input"
-                    placeholder={inp.type}
-                    value={args[i]}
-                    onChange={e => { const next = [...args]; next[i] = e.target.value; setArgs(next) }}
-                  />
+                  {inputOptions[i] ? (
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <select
+                        className="fn-input"
+                        style={{ flex: '0 0 150px', width: 150, minWidth: 0, cursor: 'pointer' }}
+                        value={picks[i]}
+                        onChange={e => {
+                          const opt = inputOptions[i].find(o => o.label === e.target.value)
+                          const nextPicks = [...picks]; nextPicks[i] = e.target.value; setPicks(nextPicks)
+                          if (opt) { const next = [...args]; next[i] = opt.value; setArgs(next) }
+                        }}
+                      >
+                        <option value="">— role name —</option>
+                        {inputOptions[i].map(opt => (
+                          <option key={opt.label} value={opt.label}>{opt.label}</option>
+                        ))}
+                      </select>
+                      <input
+                        className="fn-input"
+                        style={{ flex: 1, minWidth: 0 }}
+                        placeholder="role (bytes32)"
+                        value={args[i]}
+                        onChange={e => { const next = [...args]; next[i] = e.target.value; setArgs(next) }}
+                      />
+                    </div>
+                  ) : (
+                    <input
+                      className="fn-input"
+                      placeholder={inp.type}
+                      value={args[i]}
+                      onChange={e => { const next = [...args]; next[i] = e.target.value; setArgs(next) }}
+                    />
+                  )}
                 </div>
               ))}
             </div>

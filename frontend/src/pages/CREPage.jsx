@@ -5,6 +5,9 @@ import {
   XDC_ADDRESS, XDC_RPC,
   formatTokenAmount, normaliseAddress,
 } from '../config.js'
+import { ROLES } from '../components/RoleSelector.jsx'
+
+const ROLE_OPTIONS = ROLES.map(r => ({ label: r.name, value: r.bytes32 }))
 
 // Build eth_call JSON-RPC payload for a given function + args
 function buildEthCallPayload(fnName, args, contractAddress) {
@@ -26,21 +29,14 @@ function decodeResult(fnName, hexResult) {
   return decoded.length === 1 ? decoded[0] : decoded
 }
 
-const READ_FNS = [
-  'totalSupply', 'name', 'symbol', 'decimals', 'paused', 'owner',
-  'balanceOf', 'isVerified', 'isFrozen', 'getFrozenTokens',
-  'allowance', 'hasRole',
-]
-
-const WRITE_FNS = [
-  'transfer', 'approve', 'transferFrom',
-  'mint', 'burn',
-  'pause', 'unpause',
-  'registerIdentity', 'revokeIdentity',
-  'setAddressFrozen', 'freezePartialTokens', 'unfreezePartialTokens',
-  'forcedTransfer', 'recoveryAddress',
-  'grantRole', 'revokeRole',
-]
+function CREWritePair({ a, b, signer }) {
+  return (
+    <div style={{ display: 'flex', gap: 12 }}>
+      <div style={{ flex: '1 1 0', minWidth: 0 }}><CREWriteRow fnName={a} signer={signer} /></div>
+      <div style={{ flex: '1 1 0', minWidth: 0 }}><CREWriteRow fnName={b} signer={signer} /></div>
+    </div>
+  )
+}
 
 const TOKEN_AMOUNT_FNS = ['totalSupply', 'balanceOf', 'getFrozenTokens', 'allowance']
 
@@ -58,6 +54,7 @@ function CREReadRow({ fnName }) {
   const abiEntry = TOKEN_ABI.find(e => e.name === fnName)
   const inputs = abiEntry?.inputs || []
   const [args, setArgs] = useState(inputs.map(() => ''))
+  const [picks, setPicks] = useState(inputs.map(() => ''))
   const [payload, setPayload] = useState(null)
   const [rawRes, setRawRes] = useState(null)
   const [result, setResult] = useState(null)
@@ -120,16 +117,39 @@ function CREReadRow({ fnName }) {
           {inputs.map((inp, i) => (
             <div key={i} className="fn-input-group">
               <label className="fn-input-label">{inp.name} ({inp.type})</label>
-              <input
-                className="fn-input"
-                placeholder={inp.type}
-                value={args[i]}
-                onChange={e => {
-                  const next = [...args]
-                  next[i] = e.target.value
-                  setArgs(next)
-                }}
-              />
+              {inp.type === 'bytes32' ? (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <select
+                    className="fn-input"
+                    style={{ flex: '0 0 150px', width: 150, minWidth: 0, cursor: 'pointer' }}
+                    value={picks[i]}
+                    onChange={e => {
+                      const opt = ROLE_OPTIONS.find(o => o.label === e.target.value)
+                      const nextPicks = [...picks]; nextPicks[i] = e.target.value; setPicks(nextPicks)
+                      if (opt) { const next = [...args]; next[i] = opt.value; setArgs(next) }
+                    }}
+                  >
+                    <option value="">— role name —</option>
+                    {ROLE_OPTIONS.map(opt => (
+                      <option key={opt.label} value={opt.label}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <input
+                    className="fn-input"
+                    style={{ flex: 1, minWidth: 0 }}
+                    placeholder="role (bytes32)"
+                    value={args[i]}
+                    onChange={e => { const next = [...args]; next[i] = e.target.value; setArgs(next) }}
+                  />
+                </div>
+              ) : (
+                <input
+                  className="fn-input"
+                  placeholder={inp.type}
+                  value={args[i]}
+                  onChange={e => { const next = [...args]; next[i] = e.target.value; setArgs(next) }}
+                />
+              )}
             </div>
           ))}
         </div>
@@ -171,6 +191,7 @@ function CREWriteRow({ fnName, signer }) {
   const abiEntry = TOKEN_ABI.find(e => e.name === fnName)
   const inputs = abiEntry?.inputs || []
   const [args, setArgs] = useState(inputs.map(() => ''))
+  const [picks, setPicks] = useState(inputs.map(() => ''))
   const [calldata, setCalldata] = useState(null)
   const [txResult, setTxResult] = useState(null)
   const [status, setStatus] = useState('idle')
@@ -247,16 +268,39 @@ function CREWriteRow({ fnName, signer }) {
                 {inp.name} ({inp.type})
                 {inp.type.includes('[]') && <span style={{ color: 'var(--text-dim)', marginLeft: 4 }}>(comma-separated)</span>}
               </label>
-              <input
-                className="fn-input"
-                placeholder={inp.type}
-                value={args[i]}
-                onChange={e => {
-                  const next = [...args]
-                  next[i] = e.target.value
-                  setArgs(next)
-                }}
-              />
+              {inp.type === 'bytes32' ? (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <select
+                    className="fn-input"
+                    style={{ flex: '0 0 150px', width: 150, minWidth: 0, cursor: 'pointer' }}
+                    value={picks[i]}
+                    onChange={e => {
+                      const opt = ROLE_OPTIONS.find(o => o.label === e.target.value)
+                      const nextPicks = [...picks]; nextPicks[i] = e.target.value; setPicks(nextPicks)
+                      if (opt) { const next = [...args]; next[i] = opt.value; setArgs(next) }
+                    }}
+                  >
+                    <option value="">— role name —</option>
+                    {ROLE_OPTIONS.map(opt => (
+                      <option key={opt.label} value={opt.label}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <input
+                    className="fn-input"
+                    style={{ flex: 1, minWidth: 0 }}
+                    placeholder="role (bytes32)"
+                    value={args[i]}
+                    onChange={e => { const next = [...args]; next[i] = e.target.value; setArgs(next) }}
+                  />
+                </div>
+              ) : (
+                <input
+                  className="fn-input"
+                  placeholder={inp.type}
+                  value={args[i]}
+                  onChange={e => { const next = [...args]; next[i] = e.target.value; setArgs(next) }}
+                />
+              )}
             </div>
           ))}
         </div>
@@ -440,22 +484,61 @@ export default function CREPage() {
       </div>
       {connError && <div className="alert alert-warn">{connError}</div>}
 
-      <div className="section-label">Read Functions — CRE HTTP Capability Simulation</div>
+      {/* ── Token Info ── */}
+      <div className="section-label">Token Info</div>
       <div className="fn-list">
-        {READ_FNS.map(fn => (
-          <CREReadRow key={fn} fnName={fn} />
-        ))}
+        <CREReadRow fnName="totalSupply" />
+        <CREReadRow fnName="name" />
+        <CREReadRow fnName="symbol" />
+        <CREReadRow fnName="decimals" />
+        <CREReadRow fnName="paused" />
+        <CREReadRow fnName="owner" />
       </div>
 
-      <div className="section-label">Write Functions — Calldata + Wallet</div>
+      {/* ── User ── */}
+      <div className="section-label">User</div>
+      <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
+        Any verified address — balance, allowance, status, transfer, approve
+      </p>
+      <div className="fn-list">
+        <CREReadRow fnName="balanceOf" />
+        <CREReadRow fnName="allowance" />
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ flex: '1 1 0', minWidth: 0 }}><CREReadRow fnName="isVerified" /></div>
+          <div style={{ flex: '1 1 0', minWidth: 0 }}><CREReadRow fnName="isFrozen" /></div>
+        </div>
+        <CREWriteRow fnName="transfer"     signer={signer} />
+        <CREWriteRow fnName="approve"      signer={signer} />
+        <CREWriteRow fnName="transferFrom" signer={signer} />
+      </div>
+
+      {/* ── Agent ── */}
+      <div className="section-label">Agent</div>
+      <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
+        Requires <code>AGENT_ROLE</code> — mint, burn, identity, freeze, pause
+      </p>
       <div className="alert alert-warn" style={{ marginBottom: 12 }}>
         CRE cannot submit transactions directly &mdash; it would need a signer/agent wallet.
         These show the encoded calldata CRE would prepare, and let you execute via MetaMask.
       </div>
       <div className="fn-list">
-        {WRITE_FNS.map(fn => (
-          <CREWriteRow key={fn} fnName={fn} signer={signer} />
-        ))}
+        <CREWritePair a="mint"                b="burn"                     signer={signer} />
+        <CREWritePair a="pause"               b="unpause"                  signer={signer} />
+        <CREWritePair a="registerIdentity"    b="revokeIdentity"           signer={signer} />
+        <CREWritePair a="freezePartialTokens" b="unfreezePartialTokens"    signer={signer} />
+        <CREWriteRow fnName="setAddressFrozen" signer={signer} />
+        <CREWriteRow fnName="forcedTransfer"   signer={signer} />
+        <CREWriteRow fnName="recoveryAddress"  signer={signer} />
+      </div>
+
+      {/* ── Owner ── */}
+      <div className="section-label">Owner</div>
+      <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
+        Requires <code>DEFAULT_ADMIN_ROLE</code> — role management
+      </p>
+      <div className="fn-list">
+        <CREReadRow fnName="hasRole" />
+        <CREWritePair a="grantRole" b="revokeRole" signer={signer} />
       </div>
     </div>
   )
