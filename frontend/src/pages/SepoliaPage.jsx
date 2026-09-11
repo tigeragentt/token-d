@@ -2,6 +2,7 @@ import { ethers } from 'ethers'
 import { SEPOLIA_ADDRESS, SEPOLIA_RPC, SEPOLIA_NETWORK_PARAMS } from '../config.js'
 import { useWallet } from '../context/WalletContext.jsx'
 import TokenInfoPanel from '../components/TokenInfoPanel.jsx'
+import StatusBlock from '../components/StatusBlock.jsx'
 import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
 
@@ -47,6 +48,7 @@ export default function SepoliaPage() {
       )}
 
       <TokenInfoPanel provider={readProvider} contractAddress={SEPOLIA_ADDRESS} />
+      <StatusBlock provider={readProvider} contractAddress={SEPOLIA_ADDRESS} />
 
       <div className="section-label">Query Functions</div>
       <div className="fn-list">

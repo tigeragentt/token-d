@@ -2,6 +2,7 @@ import { ethers } from 'ethers'
 import { XDC_ADDRESS, XDC_RPC, XDC_NETWORK_PARAMS } from '../config.js'
 import { useWallet } from '../context/WalletContext.jsx'
 import TokenInfoPanel from '../components/TokenInfoPanel.jsx'
+import StatusBlock from '../components/StatusBlock.jsx'
 import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
 
@@ -53,6 +54,7 @@ export default function XDCPage() {
       {error && <div className="alert alert-warn">{error}</div>}
 
       <TokenInfoPanel provider={readProvider} contractAddress={XDC_ADDRESS} />
+      <StatusBlock provider={readProvider} contractAddress={XDC_ADDRESS} />
 
       <div className="section-label">Query Functions — Raw JSON-RPC</div>
       <div className="fn-list">
