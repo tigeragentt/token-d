@@ -1,14 +1,11 @@
-import { useState } from 'react'
 import { ethers } from 'ethers'
-import {
-  XDC_ADDRESS, XDC_CHAIN_ID, XDC_RPC, XDC_NETWORK_PARAMS,
-  normaliseAddress,
-} from '../config.js'
+import { XDC_ADDRESS, XDC_RPC, XDC_NETWORK_PARAMS } from '../config.js'
+import { useWallet } from '../context/WalletContext.jsx'
+import TokenInfoPanel from '../components/TokenInfoPanel.jsx'
 import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
 
 const READ_FNS = [
-  'totalSupply', 'name', 'symbol', 'decimals', 'paused', 'owner',
   'balanceOf', 'isVerified', 'isFrozen', 'getFrozenTokens',
   'allowance', 'hasRole',
 ]
@@ -23,51 +20,10 @@ const WRITE_FNS = [
   'grantRole', 'revokeRole',
 ]
 
+const readProvider = new ethers.JsonRpcProvider(XDC_RPC)
+
 export default function XDCPage() {
-  const [account, setAccount] = useState(null)
-  const [signer, setSigner] = useState(null)
-  const [connError, setConnError] = useState(null)
-
-  // XDC read provider — raw JSON-RPC via fetch
-  const readProvider = new ethers.JsonRpcProvider(XDC_RPC)
-
-  async function connect() {
-    setConnError(null)
-    if (!window.ethereum) {
-      setConnError('MetaMask not found.')
-      return
-    }
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      await provider.send('eth_requestAccounts', [])
-      const network = await provider.getNetwork()
-      if (Number(network.chainId) !== XDC_CHAIN_ID) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: XDC_NETWORK_PARAMS.chainId }],
-          })
-        } catch (err) {
-          if (err.code === 4902) {
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [XDC_NETWORK_PARAMS],
-            })
-          } else throw err
-        }
-      }
-      const s = await provider.getSigner()
-      setAccount(await s.getAddress())
-      setSigner(s)
-    } catch (e) {
-      setConnError(e.message || String(e))
-    }
-  }
-
-  function disconnect() {
-    setAccount(null)
-    setSigner(null)
-  }
+  const { account, signer, error, connect } = useWallet()
 
   return (
     <div>
@@ -80,22 +36,25 @@ export default function XDCPage() {
       <div className="alert alert-info">
         Read calls use raw JSON-RPC (eth_call) directly to the XDC node &mdash; no wallet needed.
         Each card shows a collapsible Raw JSON-RPC section.
-      </div>
-
-      <div className="connect-bar">
-        {!account ? (
-          <button className="btn btn-primary" onClick={connect}>Connect MetaMask (XDC Apothem)</button>
-        ) : (
+        {!account && (
           <>
-            <span className="connected-addr">{account}</span>
-            <span className="network-badge" style={{ color: 'var(--green)', borderColor: 'var(--green)' }}>XDC Apothem</span>
-            <button className="btn btn-secondary btn-sm" onClick={disconnect}>Disconnect</button>
+            {' '}Write functions require MetaMask on XDC Apothem.{' '}
+            <button
+              className="btn btn-primary btn-sm"
+              style={{ marginLeft: 8 }}
+              onClick={() => connect(XDC_NETWORK_PARAMS)}
+            >
+              Connect &amp; switch to XDC
+            </button>
           </>
         )}
       </div>
-      {connError && <div className="alert alert-warn">{connError}</div>}
 
-      <div className="section-label">Read Functions — Raw JSON-RPC</div>
+      {error && <div className="alert alert-warn">{error}</div>}
+
+      <TokenInfoPanel provider={readProvider} contractAddress={XDC_ADDRESS} />
+
+      <div className="section-label">Query Functions — Raw JSON-RPC</div>
       <div className="fn-list">
         {READ_FNS.map(fn => (
           <ReadFunction
