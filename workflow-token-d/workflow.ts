@@ -59,11 +59,11 @@ const readSepoliaSupply = (runtime: Runtime<Config>): bigint => {
     })
     .result()
 
-  const [supply] = decodeFunctionResult({
+  const supply = decodeFunctionResult({
     abi: erc20Abi,
     functionName: "totalSupply",
     data: bytesToHex(result.data),
-  })
+  }) as bigint
   return supply
 }
 
