@@ -57,9 +57,17 @@ export default function XDCPage() {
         <ReadFunction fnName="allowance" provider={readProvider} contractAddress={XDC_ADDRESS}
           showRaw={true} prefillArgs={[account, null]} inline />
 
-        {/* require manual address */}
-        <ReadFunction fnName="isVerified" provider={readProvider} contractAddress={XDC_ADDRESS} showRaw={true} inline />
-        <ReadFunction fnName="isFrozen"   provider={readProvider} contractAddress={XDC_ADDRESS} showRaw={true} inline />
+        {/* prefill from wallet, side by side */}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ flex: '1 1 0', minWidth: 0 }}>
+            <ReadFunction fnName="isVerified" provider={readProvider} contractAddress={XDC_ADDRESS}
+              showRaw={true} prefillArgs={[account]} autoCall={!!account} inline />
+          </div>
+          <div style={{ flex: '1 1 0', minWidth: 0 }}>
+            <ReadFunction fnName="isFrozen" provider={readProvider} contractAddress={XDC_ADDRESS}
+              showRaw={true} prefillArgs={[account]} autoCall={!!account} inline />
+          </div>
+        </div>
 
         <WriteFunction fnName="transfer"     signer={signer} contractAddress={XDC_ADDRESS} />
         <WriteFunction fnName="approve"      signer={signer} contractAddress={XDC_ADDRESS} />

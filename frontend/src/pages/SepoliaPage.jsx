@@ -52,9 +52,17 @@ export default function SepoliaPage() {
         <ReadFunction fnName="allowance" provider={readProvider} contractAddress={SEPOLIA_ADDRESS}
           showRaw={false} prefillArgs={[account, null]} inline />
 
-        {/* require manual address */}
-        <ReadFunction fnName="isVerified" provider={readProvider} contractAddress={SEPOLIA_ADDRESS} showRaw={false} inline />
-        <ReadFunction fnName="isFrozen"   provider={readProvider} contractAddress={SEPOLIA_ADDRESS} showRaw={false} inline />
+        {/* prefill from wallet, side by side */}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ flex: '1 1 0', minWidth: 0 }}>
+            <ReadFunction fnName="isVerified" provider={readProvider} contractAddress={SEPOLIA_ADDRESS}
+              showRaw={false} prefillArgs={[account]} autoCall={!!account} inline />
+          </div>
+          <div style={{ flex: '1 1 0', minWidth: 0 }}>
+            <ReadFunction fnName="isFrozen" provider={readProvider} contractAddress={SEPOLIA_ADDRESS}
+              showRaw={false} prefillArgs={[account]} autoCall={!!account} inline />
+          </div>
+        </div>
 
         <WriteFunction fnName="transfer"     signer={signer} contractAddress={SEPOLIA_ADDRESS} />
         <WriteFunction fnName="approve"      signer={signer} contractAddress={SEPOLIA_ADDRESS} />
