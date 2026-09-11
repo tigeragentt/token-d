@@ -5,12 +5,16 @@ import TokenInfoPanel from '../components/TokenInfoPanel.jsx'
 import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
 
-const READ_FNS = ['balanceOf', 'getFrozenTokens', 'allowance', 'hasRole']
+const USER_READ_FNS  = ['balanceOf', 'allowance', 'isVerified', 'isFrozen']
+const USER_WRITE_FNS = ['transfer', 'approve', 'transferFrom']
 
-const USER_FNS  = ['transfer', 'approve', 'transferFrom']
-const AGENT_FNS = ['mint', 'burn', 'pause', 'unpause', 'registerIdentity', 'revokeIdentity',
-                   'setAddressFrozen', 'freezePartialTokens', 'unfreezePartialTokens',
-                   'forcedTransfer', 'recoveryAddress']
+const AGENT_FNS = [
+  'mint', 'burn', 'pause', 'unpause',
+  'registerIdentity', 'revokeIdentity',
+  'setAddressFrozen', 'freezePartialTokens', 'unfreezePartialTokens',
+  'forcedTransfer', 'recoveryAddress',
+]
+
 const OWNER_FNS = ['grantRole', 'revokeRole']
 
 const readProvider = new ethers.JsonRpcProvider(SEPOLIA_RPC)
@@ -41,25 +45,23 @@ export default function SepoliaPage() {
 
       <TokenInfoPanel provider={readProvider} contractAddress={SEPOLIA_ADDRESS} />
 
-      <div className="section-label">Query Functions</div>
+      {/* ── User ── */}
+      <div className="section-label">User</div>
+      <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
+        Any verified address — read balance/allowance/status, transfer, approve
+      </p>
       <div className="fn-list">
-        {READ_FNS.map(fn => (
+        {USER_READ_FNS.map(fn => (
           <ReadFunction key={fn} fnName={fn} provider={readProvider}
             contractAddress={SEPOLIA_ADDRESS} showRaw={false} />
         ))}
-      </div>
-
-      <div className="section-label">User Functions</div>
-      <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
-        Any verified address — transfer, approve
-      </p>
-      <div className="fn-list">
-        {USER_FNS.map(fn => (
+        {USER_WRITE_FNS.map(fn => (
           <WriteFunction key={fn} fnName={fn} signer={signer} contractAddress={SEPOLIA_ADDRESS} />
         ))}
       </div>
 
-      <div className="section-label">Agent Functions</div>
+      {/* ── Agent ── */}
+      <div className="section-label">Agent</div>
       <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
         Requires <code>AGENT_ROLE</code> — mint, burn, identity, freeze, pause
       </p>
@@ -69,7 +71,8 @@ export default function SepoliaPage() {
         ))}
       </div>
 
-      <div className="section-label">Owner Functions</div>
+      {/* ── Owner ── */}
+      <div className="section-label">Owner</div>
       <p style={{ color: 'var(--text-dim)', fontSize: 12, marginBottom: 10 }}>
         Requires <code>DEFAULT_ADMIN_ROLE</code> — role management
       </p>
