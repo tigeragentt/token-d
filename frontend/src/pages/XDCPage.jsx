@@ -6,16 +6,23 @@ import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
 import RoleSelector from '../components/RoleSelector.jsx'
 
-const AGENT_FNS = [
-  'mint', 'burn', 'pause', 'unpause',
-  'registerIdentity', 'revokeIdentity',
-  'setAddressFrozen', 'freezePartialTokens', 'unfreezePartialTokens',
-  'forcedTransfer', 'recoveryAddress',
-]
 const OWNER_READ_FNS  = ['hasRole']
 const OWNER_WRITE_FNS = ['grantRole', 'revokeRole']
 
 const readProvider = new ethers.JsonRpcProvider(XDC_RPC)
+
+function FnPair({ a, b, signer, address }) {
+  return (
+    <div style={{ display: 'flex', gap: 12 }}>
+      <div style={{ flex: '1 1 0', minWidth: 0 }}>
+        <WriteFunction fnName={a} signer={signer} contractAddress={address} />
+      </div>
+      <div style={{ flex: '1 1 0', minWidth: 0 }}>
+        <WriteFunction fnName={b} signer={signer} contractAddress={address} />
+      </div>
+    </div>
+  )
+}
 
 export default function XDCPage() {
   const { account, signer, error, connect } = useWallet()
@@ -51,13 +58,10 @@ export default function XDCPage() {
         Any verified address — balance, allowance, status, transfer, approve
       </p>
       <div className="fn-list">
-        {/* auto-fill with connected wallet */}
         <ReadFunction fnName="balanceOf" provider={readProvider} contractAddress={XDC_ADDRESS}
           showRaw={true} prefillArgs={[account]} autoCall={!!account} inline />
         <ReadFunction fnName="allowance" provider={readProvider} contractAddress={XDC_ADDRESS}
           showRaw={true} prefillArgs={[account, null]} inline />
-
-        {/* prefill from wallet, side by side */}
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: '1 1 0', minWidth: 0 }}>
             <ReadFunction fnName="isVerified" provider={readProvider} contractAddress={XDC_ADDRESS}
@@ -68,7 +72,6 @@ export default function XDCPage() {
               showRaw={true} prefillArgs={[account]} autoCall={!!account} inline />
           </div>
         </div>
-
         <WriteFunction fnName="transfer"     signer={signer} contractAddress={XDC_ADDRESS} />
         <WriteFunction fnName="approve"      signer={signer} contractAddress={XDC_ADDRESS} />
         <WriteFunction fnName="transferFrom" signer={signer} contractAddress={XDC_ADDRESS} />
@@ -80,9 +83,12 @@ export default function XDCPage() {
         Requires <code>AGENT_ROLE</code> — mint, burn, identity, freeze, pause
       </p>
       <div className="fn-list">
-        {AGENT_FNS.map(fn => (
-          <WriteFunction key={fn} fnName={fn} signer={signer} contractAddress={XDC_ADDRESS} />
-        ))}
+        <FnPair a="mint"             b="burn"                     signer={signer} address={XDC_ADDRESS} />
+        <FnPair a="pause"            b="unpause"                  signer={signer} address={XDC_ADDRESS} />
+        <FnPair a="registerIdentity" b="revokeIdentity"           signer={signer} address={XDC_ADDRESS} />
+        <FnPair a="freezePartialTokens" b="unfreezePartialTokens" signer={signer} address={XDC_ADDRESS} />
+        <WriteFunction fnName="setAddressFrozen" signer={signer} contractAddress={XDC_ADDRESS} />
+        <FnPair a="forcedTransfer"   b="recoveryAddress"          signer={signer} address={XDC_ADDRESS} />
       </div>
 
       {/* ── Owner ── */}

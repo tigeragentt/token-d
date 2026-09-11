@@ -6,16 +6,23 @@ import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
 import RoleSelector from '../components/RoleSelector.jsx'
 
-const AGENT_FNS = [
-  'mint', 'burn', 'pause', 'unpause',
-  'registerIdentity', 'revokeIdentity',
-  'setAddressFrozen', 'freezePartialTokens', 'unfreezePartialTokens',
-  'forcedTransfer', 'recoveryAddress',
-]
 const OWNER_READ_FNS  = ['hasRole']
 const OWNER_WRITE_FNS = ['grantRole', 'revokeRole']
 
 const readProvider = new ethers.JsonRpcProvider(SEPOLIA_RPC)
+
+function FnPair({ a, b, signer, address }) {
+  return (
+    <div style={{ display: 'flex', gap: 12 }}>
+      <div style={{ flex: '1 1 0', minWidth: 0 }}>
+        <WriteFunction fnName={a} signer={signer} contractAddress={address} />
+      </div>
+      <div style={{ flex: '1 1 0', minWidth: 0 }}>
+        <WriteFunction fnName={b} signer={signer} contractAddress={address} />
+      </div>
+    </div>
+  )
+}
 
 export default function SepoliaPage() {
   const { account, signer, error, connect } = useWallet()
@@ -46,13 +53,10 @@ export default function SepoliaPage() {
         Any verified address — balance, allowance, status, transfer, approve
       </p>
       <div className="fn-list">
-        {/* auto-fill with connected wallet */}
         <ReadFunction fnName="balanceOf" provider={readProvider} contractAddress={SEPOLIA_ADDRESS}
           showRaw={false} prefillArgs={[account]} autoCall={!!account} inline />
         <ReadFunction fnName="allowance" provider={readProvider} contractAddress={SEPOLIA_ADDRESS}
           showRaw={false} prefillArgs={[account, null]} inline />
-
-        {/* prefill from wallet, side by side */}
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: '1 1 0', minWidth: 0 }}>
             <ReadFunction fnName="isVerified" provider={readProvider} contractAddress={SEPOLIA_ADDRESS}
@@ -63,7 +67,6 @@ export default function SepoliaPage() {
               showRaw={false} prefillArgs={[account]} autoCall={!!account} inline />
           </div>
         </div>
-
         <WriteFunction fnName="transfer"     signer={signer} contractAddress={SEPOLIA_ADDRESS} />
         <WriteFunction fnName="approve"      signer={signer} contractAddress={SEPOLIA_ADDRESS} />
         <WriteFunction fnName="transferFrom" signer={signer} contractAddress={SEPOLIA_ADDRESS} />
@@ -75,9 +78,12 @@ export default function SepoliaPage() {
         Requires <code>AGENT_ROLE</code> — mint, burn, identity, freeze, pause
       </p>
       <div className="fn-list">
-        {AGENT_FNS.map(fn => (
-          <WriteFunction key={fn} fnName={fn} signer={signer} contractAddress={SEPOLIA_ADDRESS} />
-        ))}
+        <FnPair a="mint"             b="burn"                   signer={signer} address={SEPOLIA_ADDRESS} />
+        <FnPair a="pause"            b="unpause"                signer={signer} address={SEPOLIA_ADDRESS} />
+        <FnPair a="registerIdentity" b="revokeIdentity"         signer={signer} address={SEPOLIA_ADDRESS} />
+        <FnPair a="freezePartialTokens" b="unfreezePartialTokens" signer={signer} address={SEPOLIA_ADDRESS} />
+        <WriteFunction fnName="setAddressFrozen" signer={signer} contractAddress={SEPOLIA_ADDRESS} />
+        <FnPair a="forcedTransfer"   b="recoveryAddress"        signer={signer} address={SEPOLIA_ADDRESS} />
       </div>
 
       {/* ── Owner ── */}
