@@ -48,13 +48,13 @@ export default function SepoliaPage() {
       <div className="fn-list">
         {/* auto-fill with connected wallet */}
         <ReadFunction fnName="balanceOf" provider={readProvider} contractAddress={SEPOLIA_ADDRESS}
-          showRaw={false} prefillArgs={[account]} autoCall={!!account} />
+          showRaw={false} prefillArgs={[account]} autoCall={!!account} inline />
         <ReadFunction fnName="allowance" provider={readProvider} contractAddress={SEPOLIA_ADDRESS}
-          showRaw={false} prefillArgs={[account, null]} />
+          showRaw={false} prefillArgs={[account, null]} inline />
 
         {/* require manual address */}
-        <ReadFunction fnName="isVerified" provider={readProvider} contractAddress={SEPOLIA_ADDRESS} showRaw={false} />
-        <ReadFunction fnName="isFrozen"   provider={readProvider} contractAddress={SEPOLIA_ADDRESS} showRaw={false} />
+        <ReadFunction fnName="isVerified" provider={readProvider} contractAddress={SEPOLIA_ADDRESS} showRaw={false} inline />
+        <ReadFunction fnName="isFrozen"   provider={readProvider} contractAddress={SEPOLIA_ADDRESS} showRaw={false} inline />
 
         <WriteFunction fnName="transfer"     signer={signer} contractAddress={SEPOLIA_ADDRESS} />
         <WriteFunction fnName="approve"      signer={signer} contractAddress={SEPOLIA_ADDRESS} />

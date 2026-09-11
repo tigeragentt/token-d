@@ -53,13 +53,13 @@ export default function XDCPage() {
       <div className="fn-list">
         {/* auto-fill with connected wallet */}
         <ReadFunction fnName="balanceOf" provider={readProvider} contractAddress={XDC_ADDRESS}
-          showRaw={true} prefillArgs={[account]} autoCall={!!account} />
+          showRaw={true} prefillArgs={[account]} autoCall={!!account} inline />
         <ReadFunction fnName="allowance" provider={readProvider} contractAddress={XDC_ADDRESS}
-          showRaw={true} prefillArgs={[account, null]} />
+          showRaw={true} prefillArgs={[account, null]} inline />
 
         {/* require manual address */}
-        <ReadFunction fnName="isVerified" provider={readProvider} contractAddress={XDC_ADDRESS} showRaw={true} />
-        <ReadFunction fnName="isFrozen"   provider={readProvider} contractAddress={XDC_ADDRESS} showRaw={true} />
+        <ReadFunction fnName="isVerified" provider={readProvider} contractAddress={XDC_ADDRESS} showRaw={true} inline />
+        <ReadFunction fnName="isFrozen"   provider={readProvider} contractAddress={XDC_ADDRESS} showRaw={true} inline />
 
         <WriteFunction fnName="transfer"     signer={signer} contractAddress={XDC_ADDRESS} />
         <WriteFunction fnName="approve"      signer={signer} contractAddress={XDC_ADDRESS} />

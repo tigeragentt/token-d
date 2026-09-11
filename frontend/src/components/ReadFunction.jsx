@@ -20,6 +20,7 @@ export default function ReadFunction({
   showRaw = false,
   prefillArgs = null,  // array matching inputs; null slots = empty
   autoCall = false,    // if true, call automatically when all prefills are set
+  inline = false,      // show result on the right instead of below
 }) {
   const abiEntry = TOKEN_ABI.find(e => e.name === fnName && (e.stateMutability === 'view' || e.stateMutability === 'pure'))
     || TOKEN_ABI.find(e => e.name === fnName)
@@ -100,44 +101,77 @@ export default function ReadFunction({
 
   const prefilled = (i) => prefillArgs?.[i] !== null && prefillArgs?.[i] !== undefined && prefillArgs?.[i] !== ''
 
+  const resultEl = result !== null
+    ? <div className={`fn-result ${status}`} style={inline ? { margin: 0, flex: '0 0 auto', minWidth: 120, maxWidth: 260 } : {}}>{result}</div>
+    : null
+
   return (
     <div className="fn-card">
       <div className="fn-header">
         <span className="fn-name">{fnName}()</span>
         <span className="fn-badge read">read</span>
       </div>
-      {inputs.length > 0 && (
-        <div className="fn-inputs">
+
+      {/* inline layout: inputs + button + result all in one row */}
+      {inline ? (
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
           {inputs.map((inp, i) => (
-            <div key={i} className="fn-input-group">
+            <div key={i} className="fn-input-group" style={{ flex: '1 1 180px' }}>
               <label className="fn-input-label">
                 {inp.name} <span style={{ color: '#4fa3ff' }}>({inp.type})</span>
                 {prefilled(i) && <span style={{ color: 'var(--green)', marginLeft: 6, fontSize: 10 }}>● auto</span>}
               </label>
               <input
                 className="fn-input"
+                style={{ minWidth: 0, width: '100%' }}
                 placeholder={inp.type}
                 value={args[i]}
-                onChange={e => {
-                  const next = [...args]
-                  next[i] = e.target.value
-                  setArgs(next)
-                }}
+                onChange={e => { const next = [...args]; next[i] = e.target.value; setArgs(next) }}
+                onKeyDown={e => e.key === 'Enter' && call()}
               />
             </div>
           ))}
+          <button
+            className="btn btn-secondary btn-sm"
+            style={{ flexShrink: 0 }}
+            onClick={() => call()}
+            disabled={status === 'loading'}
+          >
+            {status === 'loading' ? <><span className="spinner" />…</> : 'Call'}
+          </button>
+          {resultEl}
         </div>
+      ) : (
+        <>
+          {inputs.length > 0 && (
+            <div className="fn-inputs">
+              {inputs.map((inp, i) => (
+                <div key={i} className="fn-input-group">
+                  <label className="fn-input-label">
+                    {inp.name} <span style={{ color: '#4fa3ff' }}>({inp.type})</span>
+                    {prefilled(i) && <span style={{ color: 'var(--green)', marginLeft: 6, fontSize: 10 }}>● auto</span>}
+                  </label>
+                  <input
+                    className="fn-input"
+                    placeholder={inp.type}
+                    value={args[i]}
+                    onChange={e => { const next = [...args]; next[i] = e.target.value; setArgs(next) }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => call()}
+            disabled={status === 'loading'}
+          >
+            {status === 'loading' ? <><span className="spinner" />Calling…</> : 'Call'}
+          </button>
+          {resultEl}
+        </>
       )}
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => call()}
-        disabled={status === 'loading'}
-      >
-        {status === 'loading' ? <><span className="spinner" />Calling…</> : 'Call'}
-      </button>
-      {result !== null && (
-        <div className={`fn-result ${status}`}>{result}</div>
-      )}
+
       {showRaw && (rawReq || rawRes) && (
         <>
           <span className="raw-toggle" onClick={() => setShowRawPanel(v => !v)}>
