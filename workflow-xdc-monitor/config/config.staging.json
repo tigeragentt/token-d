@@ -1,0 +1,6 @@
+{
+  "xdcRpcUrl": "https://rpc.apothem.network",
+  "tokenAddress": "0xD262aF97A79F7AbFF1a1Ff301a0464dBF242Dbe9",
+  "lookbackBlocks": 60,
+  "schedule": "0 */1 * * * *"
+}

@@ -270,8 +270,16 @@ function CREWriteRow({ fnName, signer, creUrl }) {
       let parsed
       try { parsed = JSON.parse(text) } catch { parsed = text }
       if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${text}`)
-      const txHash = parsed?.txHash || parsed?.result || text
-      setCreResult(`Submitted via CRE — txHash: ${txHash}`)
+      // Workflow returns JSON.stringify({txHash,to,nonce,status}); simulation may double-encode it.
+      let txHash = parsed?.txHash
+      if (!txHash && typeof parsed === 'string') {
+        try { txHash = JSON.parse(parsed)?.txHash } catch {}
+      }
+      if (!txHash && typeof parsed?.result === 'string') {
+        try { txHash = JSON.parse(parsed.result)?.txHash || parsed.result } catch { txHash = parsed.result }
+      }
+      const label = txHash ? `txHash: ${txHash}` : (text || 'submitted')
+      setCreResult(`Submitted via CRE — ${label}`)
       setCreStatus('success')
     } catch (e) {
       setCreResult(e.message || String(e))
@@ -406,6 +414,170 @@ function CREWriteRow({ fnName, signer, creUrl }) {
   )
 }
 
+const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+const TRANSFERS_LOOKBACK = 60
+
+function XDCTransfers({ monitorUrl }) {
+  const [transfers, setTransfers] = useState(null)
+  const [meta, setMeta] = useState(null)
+  const [loadingMethod, setLoadingMethod] = useState(null)
+  const [error, setError] = useState(null)
+
+  const short = addr => addr ? addr.slice(0, 6) + '…' + addr.slice(-4) : '—'
+
+  async function fetchViaRpc() {
+    setLoadingMethod('rpc')
+    setTransfers(null)
+    setMeta(null)
+    setError(null)
+    try {
+      const blockResp = await fetch(XDC_RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_blockNumber', params: [], id: 1 }),
+      })
+      const blockJson = await blockResp.json()
+      const currentBlock = parseInt(blockJson.result, 16)
+      const fromBlock = '0x' + Math.max(0, currentBlock - TRANSFERS_LOOKBACK).toString(16)
+
+      const logsResp = await fetch(XDC_RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_getLogs',
+          params: [{ fromBlock, toBlock: 'latest', address: normaliseAddress(XDC_ADDRESS), topics: [TRANSFER_TOPIC] }],
+          id: 2,
+        }),
+      })
+      const logsJson = await logsResp.json()
+      if (logsJson.error) throw new Error(logsJson.error.message)
+
+      const events = (logsJson.result || []).map(log => ({
+        from: '0x' + log.topics[1].slice(26),
+        to:   '0x' + log.topics[2].slice(26),
+        amount: formatTokenAmount(BigInt(log.data)),
+        txHash: log.transactionHash,
+        block: parseInt(log.blockNumber, 16),
+      }))
+      setTransfers(events)
+      setMeta({ events: events.length, fromBlock, currentBlock, source: 'XDC RPC' })
+    } catch (e) {
+      setError(e.message || String(e))
+      setTransfers([])
+    } finally {
+      setLoadingMethod(null)
+    }
+  }
+
+  async function fetchViaMonitor() {
+    if (!monitorUrl) return
+    setLoadingMethod('cre')
+    setTransfers(null)
+    setMeta(null)
+    setError(null)
+    try {
+      const isLocal = monitorUrl.includes('localhost') || monitorUrl.includes('127.0.0.1')
+      const fetchUrl = isLocal ? '/cre-monitor-proxy' : monitorUrl
+      const resp = await fetch(fetchUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: {} }),
+      })
+      const text = await resp.text()
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${text}`)
+      let data
+      try { data = JSON.parse(text) } catch { data = text }
+      if (typeof data === 'string') { try { data = JSON.parse(data) } catch {} }
+      if (typeof data?.result === 'string') { try { data = JSON.parse(data.result) } catch {} }
+
+      const events = (data?.transfers || []).map(t => ({
+        ...t,
+        amount: formatTokenAmount(t.amount),
+      }))
+      setTransfers(events)
+      setMeta({ events: data?.events ?? events.length, fromBlock: data?.fromBlock, currentBlock: data?.currentBlock, source: 'CRE Monitor' })
+    } catch (e) {
+      setError(e.message || String(e))
+      setTransfers([])
+    } finally {
+      setLoadingMethod(null)
+    }
+  }
+
+  return (
+    <div className="card">
+      <div className="card-title">Recent Transfer Events</div>
+      <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 14 }}>
+        Fetch the last {TRANSFERS_LOOKBACK} blocks of <code>Transfer</code> events on the XDC token —
+        directly from XDC RPC, or via the <strong>workflow-xdc-monitor</strong> HTTP trigger (same data CRE returns on each cron tick).
+      </p>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={fetchViaRpc}
+          disabled={loadingMethod !== null}
+        >
+          {loadingMethod === 'rpc' ? <><span className="spinner" />Fetching…</> : 'Fetch via XDC RPC'}
+        </button>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={fetchViaMonitor}
+          disabled={loadingMethod !== null || !monitorUrl}
+          title={!monitorUrl ? 'Paste the CRE monitor trigger URL in the card above first' : 'POST to workflow-xdc-monitor HTTP trigger'}
+          style={{ background: 'var(--accent)', borderColor: 'var(--accent)' }}
+        >
+          {loadingMethod === 'cre' ? <><span className="spinner" />Fetching…</> : 'Fetch via CRE Monitor'}
+        </button>
+      </div>
+
+      {meta && !error && (
+        <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>
+          {meta.source} — block {meta.fromBlock} → {meta.currentBlock} — {meta.events} event{meta.events !== 1 ? 's' : ''}
+        </div>
+      )}
+      {error && <div style={{ fontSize: 12, color: 'var(--warn)', marginBottom: 8 }}>{error}</div>}
+
+      {transfers && transfers.length > 0 && (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                {['Block', 'From', 'To', 'Amount', 'TxHash'].map(h => (
+                  <th key={h} style={{ textAlign: h === 'Amount' ? 'right' : 'left', padding: '4px 8px', color: 'var(--text-dim)', fontWeight: 500 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {transfers.map((t, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '4px 8px' }}>{t.block}</td>
+                  <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>{short(t.from)}</td>
+                  <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>{short(t.to)}</td>
+                  <td style={{ padding: '4px 8px', textAlign: 'right' }}>{t.amount} Deb1</td>
+                  <td style={{ padding: '4px 8px', fontFamily: 'monospace' }}>
+                    <a
+                      href={`https://testnet.xdcscan.com/tx/${t.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: 'var(--accent)' }}
+                    >
+                      {short(t.txHash)}
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {transfers && transfers.length === 0 && !error && (
+        <div style={{ color: 'var(--text-dim)', fontSize: 12 }}>No Transfer events in the last {TRANSFERS_LOOKBACK} blocks.</div>
+      )}
+    </div>
+  )
+}
+
 // Simulate CRE totalSupply workflow
 function CRESimulate() {
   const [result, setResult] = useState(null)
@@ -493,6 +665,7 @@ function CRESimulate() {
 }
 
 const CRE_URL_KEY = 'cre_trigger_url'
+const CRE_MONITOR_URL_KEY = 'cre_monitor_trigger_url'
 
 export default function CREPage() {
   const { account, signer, error: connError, connect, disconnect } = useWallet()
@@ -503,6 +676,14 @@ export default function CREPage() {
     setCreUrl(val)
     if (val) localStorage.setItem(CRE_URL_KEY, val)
     else localStorage.removeItem(CRE_URL_KEY)
+  }, [])
+  const [monitorUrl, setMonitorUrl] = useState(
+    () => localStorage.getItem(CRE_MONITOR_URL_KEY) || ''
+  )
+  const updateMonitorUrl = useCallback((val) => {
+    setMonitorUrl(val)
+    if (val) localStorage.setItem(CRE_MONITOR_URL_KEY, val)
+    else localStorage.removeItem(CRE_MONITOR_URL_KEY)
   }, [])
 
   return (
@@ -617,6 +798,36 @@ export default function CREPage() {
       <div className="fn-list">
         <CREReadRow fnName="hasRole" />
         <CREWritePair a="grantRole" b="revokeRole" signer={signer} creUrl={creUrl} />
+      </div>
+
+      {/* ── Monitor ── */}
+      <div className="section-label" style={{ marginTop: 24 }}>Transfer Events (workflow-xdc-monitor)</div>
+      <div className="card">
+        <div className="card-title">CRE Monitor Trigger (workflow-xdc-monitor)</div>
+        <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 10 }}>
+          Paste the HTTP trigger URL from <code>cre workflow simulate workflow-xdc-monitor</code> or <code>cre workflow deploy</code>.
+          Enables the <strong>Fetch via CRE Monitor</strong> button below.
+        </p>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            className="fn-input"
+            style={{ flex: 1 }}
+            placeholder="http://localhost:2000/trigger"
+            value={monitorUrl}
+            onChange={e => updateMonitorUrl(e.target.value.trim())}
+          />
+          {monitorUrl && (
+            <button className="btn btn-secondary btn-sm" onClick={() => updateMonitorUrl('')}>Clear</button>
+          )}
+        </div>
+        {monitorUrl && (
+          <div style={{ fontSize: 11, color: 'var(--green)', marginTop: 6 }}>
+            ✓ Monitor trigger URL set
+          </div>
+        )}
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <XDCTransfers monitorUrl={monitorUrl} />
       </div>
     </div>
   )
