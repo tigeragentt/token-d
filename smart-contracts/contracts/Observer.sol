@@ -157,6 +157,21 @@ contract Observer is AccessControl {
         }
     }
 
+    /**
+     * @notice Returns reports in the inclusive index range [fromIndex, toIndex].
+     * @param fromIndex First report index (inclusive).
+     * @param toIndex   Last report index (inclusive).
+     */
+    function getReports(uint256 fromIndex, uint256 toIndex) external view returns (ReportAction[] memory result) {
+        require(fromIndex <= toIndex, "Observer: invalid range");
+        require(toIndex < _reports.length, "Observer: toIndex out of bounds");
+        uint256 n = toIndex - fromIndex + 1;
+        result = new ReportAction[](n);
+        for (uint256 i = 0; i < n; i++) {
+            result[i] = _reports[fromIndex + i];
+        }
+    }
+
     function getToken(string calldata chainName) external view returns (TokenInfo memory) {
         return _tokenRegistry[chainName];
     }

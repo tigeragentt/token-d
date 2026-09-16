@@ -2,5 +2,9 @@
   "xdcRpcUrl": "https://rpc.xinfin.network",
   "tokenAddress": "0x0000000000000000000000000000000000000000",
   "lookbackBlocks": 60,
-  "schedule": "0 */1 * * * *"
+  "schedule": "0 */1 * * * *",
+  "networkName": "XDC",
+  "sepoliaRpcUrl": "https://rpc.sepolia.org",
+  "observerAddress": "",
+  "sepoliaChainId": 11155111
 }
