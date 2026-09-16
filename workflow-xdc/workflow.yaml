@@ -5,7 +5,7 @@
 # ==========================================================================
 staging-settings:
   user-workflow:
-    workflow-name: "token-d-staging"
+    workflow-name: "workflow-xdc-staging"
     deployment-registry: "private"
   workflow-artifacts:
     workflow-path: "./main.ts"
@@ -15,7 +15,7 @@ staging-settings:
 # ==========================================================================
 production-settings:
   user-workflow:
-    workflow-name: "token-d-production"
+    workflow-name: "workflow-xdc"
     deployment-registry: "private"
   workflow-artifacts:
     workflow-path: "./main.ts"

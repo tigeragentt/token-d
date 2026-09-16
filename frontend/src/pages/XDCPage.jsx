@@ -5,6 +5,7 @@ import TokenInfoPanel from '../components/TokenInfoPanel.jsx'
 import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
 import { ROLES } from '../components/RoleSelector.jsx'
+import AddTokenButton from '../components/AddTokenButton.jsx'
 
 const ROLE_OPTIONS = { 0: ROLES.map(r => ({ label: r.name, value: r.bytes32 })) }
 
@@ -31,6 +32,7 @@ export default function XDCPage() {
       <h1 className="page-title">XDC Apothem</h1>
       <p className="page-subtitle">
         Contract: <code style={{ color: 'var(--green)', fontSize: 12 }}>{XDC_ADDRESS}</code>
+        {' '}<AddTokenButton address={XDC_ADDRESS} />
         <span style={{ marginLeft: 10, color: 'var(--text-dim)', fontSize: 11 }}>RPC: {XDC_RPC}</span>
       </p>
 

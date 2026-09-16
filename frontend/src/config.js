@@ -24,14 +24,30 @@ export const SEPOLIA_NETWORK_PARAMS = {
 }
 
 export const TOKEN_DECIMALS = 2
+const DECIMALS_FACTOR = BigInt(10 ** TOKEN_DECIMALS) // 100n
 
 // Format a raw on-chain uint256 BigInt with decimals=2
 export function formatTokenAmount(raw) {
   if (raw === undefined || raw === null) return '—'
   const n = BigInt(raw)
-  const whole = n / 100n
-  const frac = n % 100n
-  return `${whole.toString()}.${frac.toString().padStart(2, '0')}`
+  const whole = n / DECIMALS_FACTOR
+  const frac = n % DECIMALS_FACTOR
+  return `${whole.toString()}.${frac.toString().padStart(TOKEN_DECIMALS, '0')}`
+}
+
+// Convert a human-readable amount string ("5" or "5.50") to raw on-chain uint256.
+// "5" → 500n, "5.50" → 550n (for 2 decimals).
+export function toRawAmount(str) {
+  const trimmed = String(str).trim()
+  const [whole, frac = ''] = trimmed.split('.')
+  const fracPadded = frac.padEnd(TOKEN_DECIMALS, '0').slice(0, TOKEN_DECIMALS)
+  return BigInt(whole || '0') * DECIMALS_FACTOR + BigInt(fracPadded || '0')
+}
+
+// Returns true for uint256 param names that represent token amounts (should use toRawAmount).
+export function isAmountParam(paramName) {
+  const n = (paramName || '').toLowerCase()
+  return n === 'amount' || n === 'value' || n === 'amounts'
 }
 
 // Normalise XDC-prefix addresses to 0x

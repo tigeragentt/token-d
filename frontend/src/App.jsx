@@ -27,7 +27,7 @@ export default function App() {
               XDC
             </NavLink>
             <NavLink to="/cre" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-              CRE / API
+              CRE
             </NavLink>
           </nav>
           <WalletButton />

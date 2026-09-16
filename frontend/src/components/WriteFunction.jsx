@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ethers } from 'ethers'
 import { TOKEN_ABI } from '../abi.js'
-import { normaliseAddress } from '../config.js'
+import { normaliseAddress, toRawAmount, isAmountParam } from '../config.js'
 
 export default function WriteFunction({ fnName, signer, contractAddress, inputOptions = {} }) {
   const abiEntry = TOKEN_ABI.find(e => e.name === fnName && e.stateMutability === 'nonpayable')
@@ -28,8 +28,8 @@ export default function WriteFunction({ fnName, signer, contractAddress, inputOp
         const t = inputs[i]?.type || ''
         if (t === 'address') return normaliseAddress(a.trim())
         if (t === 'address[]') return a.trim().split(',').map(x => normaliseAddress(x.trim()))
-        if (t === 'uint256') return BigInt(a.trim())
-        if (t === 'uint256[]') return a.trim().split(',').map(x => BigInt(x.trim()))
+        if (t === 'uint256') return isAmountParam(inputs[i]?.name) ? toRawAmount(a) : BigInt(a.trim())
+        if (t === 'uint256[]') return a.trim().split(',').map(x => isAmountParam(inputs[i]?.name) ? toRawAmount(x) : BigInt(x.trim()))
         if (t === 'bool') return a.trim().toLowerCase() === 'true'
         if (t === 'bool[]') return a.trim().split(',').map(x => x.trim().toLowerCase() === 'true')
         if (t === 'bytes32') return a.trim()
@@ -60,6 +60,9 @@ export default function WriteFunction({ fnName, signer, contractAddress, inputOp
               <label className="fn-input-label">
                 {inp.name} <span style={{color:'var(--accent)'}}>({inp.type})</span>
                 {inp.type.includes('[]') && <span style={{color:'var(--text-dim)',marginLeft:4}}>(comma-separated)</span>}
+                {(inp.type === 'uint256' || inp.type === 'uint256[]') && isAmountParam(inp.name) && (
+                  <span style={{color:'var(--text-dim)',marginLeft:4}}>Deb1 (e.g. 5 = 5.00)</span>
+                )}
               </label>
               {inputOptions[i] ? (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

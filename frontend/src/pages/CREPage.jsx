@@ -1,13 +1,22 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { ethers } from 'ethers'
 import { TOKEN_ABI } from '../abi.js'
 import {
-  XDC_ADDRESS, XDC_RPC,
-  formatTokenAmount, normaliseAddress,
+  XDC_ADDRESS, XDC_RPC, XDC_NETWORK_PARAMS,
+  formatTokenAmount, normaliseAddress, toRawAmount, isAmountParam,
 } from '../config.js'
+import { useWallet } from '../context/WalletContext.jsx'
 import { ROLES } from '../components/RoleSelector.jsx'
 
 const ROLE_OPTIONS = ROLES.map(r => ({ label: r.name, value: r.bytes32 }))
+
+function downloadJson(filename, data) {
+  const blob = new Blob([typeof data === 'string' ? data : JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
 
 // Build eth_call JSON-RPC payload for a given function + args
 function buildEthCallPayload(fnName, args, contractAddress) {
@@ -29,11 +38,11 @@ function decodeResult(fnName, hexResult) {
   return decoded.length === 1 ? decoded[0] : decoded
 }
 
-function CREWritePair({ a, b, signer }) {
+function CREWritePair({ a, b, signer, creUrl }) {
   return (
     <div style={{ display: 'flex', gap: 12 }}>
-      <div style={{ flex: '1 1 0', minWidth: 0 }}><CREWriteRow fnName={a} signer={signer} /></div>
-      <div style={{ flex: '1 1 0', minWidth: 0 }}><CREWriteRow fnName={b} signer={signer} /></div>
+      <div style={{ flex: '1 1 0', minWidth: 0 }}><CREWriteRow fnName={a} signer={signer} creUrl={creUrl} /></div>
+      <div style={{ flex: '1 1 0', minWidth: 0 }}><CREWriteRow fnName={b} signer={signer} creUrl={creUrl} /></div>
     </div>
   )
 }
@@ -76,11 +85,18 @@ function CREReadRow({ fnName }) {
       setRawRes(null)
       setResult(null)
       setStatus('idle')
+      return p
     } catch (e) {
       setPayload(null)
       setResult('Error building payload: ' + e.message)
       setStatus('error')
+      return null
     }
+  }
+
+  function downloadPayload() {
+    const p = buildPayload()
+    if (p) downloadJson(`${fnName}-payload.json`, p)
   }
 
   async function send() {
@@ -156,6 +172,7 @@ function CREReadRow({ fnName }) {
       )}
       <div style={{ display: 'flex', gap: 8 }}>
         <button className="btn btn-secondary btn-sm" onClick={buildPayload}>Build Payload</button>
+        <button className="btn btn-secondary btn-sm" onClick={downloadPayload}>Download Payload</button>
         <button
           className="btn btn-primary btn-sm"
           onClick={send}
@@ -187,7 +204,7 @@ function CREReadRow({ fnName }) {
   )
 }
 
-function CREWriteRow({ fnName, signer }) {
+function CREWriteRow({ fnName, signer, creUrl }) {
   const abiEntry = TOKEN_ABI.find(e => e.name === fnName)
   const inputs = abiEntry?.inputs || []
   const [args, setArgs] = useState(inputs.map(() => ''))
@@ -196,6 +213,8 @@ function CREWriteRow({ fnName, signer }) {
   const [txResult, setTxResult] = useState(null)
   const [status, setStatus] = useState('idle')
   const [showRaw, setShowRaw] = useState(false)
+  const [creStatus, setCreStatus] = useState('idle')
+  const [creResult, setCreResult] = useState(null)
 
   function buildCalldata() {
     try {
@@ -204,23 +223,59 @@ function CREWriteRow({ fnName, signer }) {
         const t = inputs[i]?.type || ''
         if (t === 'address') return normaliseAddress(a.trim())
         if (t === 'address[]') return a.trim().split(',').map(x => normaliseAddress(x.trim()))
-        if (t === 'uint256') return BigInt(a.trim())
-        if (t === 'uint256[]') return a.trim().split(',').map(x => BigInt(x.trim()))
+        if (t === 'uint256') return isAmountParam(inputs[i]?.name) ? toRawAmount(a) : BigInt(a.trim())
+        if (t === 'uint256[]') return a.trim().split(',').map(x => isAmountParam(inputs[i]?.name) ? toRawAmount(x) : BigInt(x.trim()))
         if (t === 'bool') return a.trim().toLowerCase() === 'true'
         if (t === 'bool[]') return a.trim().split(',').map(x => x.trim().toLowerCase() === 'true')
         if (t === 'bytes32') return a.trim()
         return a.trim()
       })
       const data = iface.encodeFunctionData(fnName, normArgs)
-      setCalldata(JSON.stringify({
-        note: 'CRE would submit this via a wallet/signer — not via HTTP capability',
+      const obj = {
         to: normaliseAddress(XDC_ADDRESS),
         data,
         fnName,
         args: normArgs.map(a => typeof a === 'bigint' ? a.toString() : a),
-      }, null, 2))
+      }
+      setCalldata(JSON.stringify(obj, null, 2))
+      return obj
     } catch (e) {
       setCalldata('Error: ' + e.message)
+      return null
+    }
+  }
+
+  function downloadPayload() {
+    const obj = buildCalldata()
+    if (obj) downloadJson(`${fnName}-payload.json`, obj)
+  }
+
+  async function sendViaCre() {
+    if (!creUrl) { setCreResult('Paste the CRE trigger URL above first.'); setCreStatus('error'); return }
+    const obj = buildCalldata()
+    if (!obj) return
+    setCreStatus('loading')
+    setCreResult(null)
+    try {
+      const body = JSON.stringify({ input: { to: obj.to, data: obj.data, gasLimit: 100000 } })
+      // Route localhost URLs through Vite dev proxy (/cre-proxy) to avoid CORS.
+      const isLocal = creUrl.includes('localhost') || creUrl.includes('127.0.0.1')
+      const fetchUrl = isLocal ? '/cre-proxy' : creUrl
+      const resp = await fetch(fetchUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      })
+      const text = await resp.text()
+      let parsed
+      try { parsed = JSON.parse(text) } catch { parsed = text }
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${text}`)
+      const txHash = parsed?.txHash || parsed?.result || text
+      setCreResult(`Submitted via CRE — txHash: ${txHash}`)
+      setCreStatus('success')
+    } catch (e) {
+      setCreResult(e.message || String(e))
+      setCreStatus('error')
     }
   }
 
@@ -234,8 +289,8 @@ function CREWriteRow({ fnName, signer }) {
         const t = inputs[i]?.type || ''
         if (t === 'address') return normaliseAddress(a.trim())
         if (t === 'address[]') return a.trim().split(',').map(x => normaliseAddress(x.trim()))
-        if (t === 'uint256') return BigInt(a.trim())
-        if (t === 'uint256[]') return a.trim().split(',').map(x => BigInt(x.trim()))
+        if (t === 'uint256') return isAmountParam(inputs[i]?.name) ? toRawAmount(a) : BigInt(a.trim())
+        if (t === 'uint256[]') return a.trim().split(',').map(x => isAmountParam(inputs[i]?.name) ? toRawAmount(x) : BigInt(x.trim()))
         if (t === 'bool') return a.trim().toLowerCase() === 'true'
         if (t === 'bool[]') return a.trim().split(',').map(x => x.trim().toLowerCase() === 'true')
         if (t === 'bytes32') return a.trim()
@@ -267,6 +322,9 @@ function CREWriteRow({ fnName, signer }) {
               <label className="fn-input-label">
                 {inp.name} ({inp.type})
                 {inp.type.includes('[]') && <span style={{ color: 'var(--text-dim)', marginLeft: 4 }}>(comma-separated)</span>}
+                {(inp.type === 'uint256' || inp.type === 'uint256[]') && isAmountParam(inp.name) && (
+                  <span style={{ color: 'var(--text-dim)', marginLeft: 4 }}>Deb1 (e.g. 5 = 5.00)</span>
+                )}
               </label>
               {inp.type === 'bytes32' ? (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -305,8 +363,20 @@ function CREWriteRow({ fnName, signer }) {
           ))}
         </div>
       )}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button className="btn btn-secondary btn-sm" onClick={buildCalldata}>Show Calldata</button>
+        <button className="btn btn-secondary btn-sm" onClick={downloadPayload}>Download Payload</button>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={sendViaCre}
+          disabled={creStatus === 'loading' || !creUrl}
+          title={!creUrl ? 'Paste CRE trigger URL above first' : 'POST to the workflow-xdc HTTP trigger'}
+          style={{ background: 'var(--accent)', borderColor: 'var(--accent)' }}
+        >
+          {creStatus === 'loading'
+            ? <><span className="spinner" />Sending to CRE…</>
+            : 'Send via CRE'}
+        </button>
         <button
           className="btn btn-primary btn-sm"
           onClick={sendTx}
@@ -321,10 +391,13 @@ function CREWriteRow({ fnName, signer }) {
       {calldata && (
         <>
           <span className="raw-toggle" onClick={() => setShowRaw(v => !v)}>
-            {showRaw ? '▼' : '▶'} Encoded Calldata (CRE would use this)
+            {showRaw ? '▼' : '▶'} Encoded Calldata
           </span>
           {showRaw && <div className="raw-block">{calldata}</div>}
         </>
+      )}
+      {creResult !== null && (
+        <div className={`fn-result ${creStatus}`}>{creResult}</div>
       )}
       {txResult !== null && (
         <div className={`fn-result ${status === 'pending' ? 'pending' : status}`}>{txResult}</div>
@@ -419,45 +492,22 @@ function CRESimulate() {
   )
 }
 
+const CRE_URL_KEY = 'cre_trigger_url'
+
 export default function CREPage() {
-  const [account, setAccount] = useState(null)
-  const [signer, setSigner] = useState(null)
-  const [connError, setConnError] = useState(null)
-
-  const { XDC_CHAIN_ID, XDC_NETWORK_PARAMS } = { XDC_CHAIN_ID: 51, XDC_NETWORK_PARAMS: {
-    chainId: '0x33',
-    chainName: 'XDC Apothem Testnet',
-    rpcUrls: ['https://rpc.apothem.network'],
-    nativeCurrency: { name: 'XDC', symbol: 'TXDC', decimals: 18 },
-    blockExplorerUrls: ['https://testnet.xdcscan.com'],
-  }}
-
-  async function connect() {
-    setConnError(null)
-    if (!window.ethereum) { setConnError('MetaMask not found.'); return }
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      await provider.send('eth_requestAccounts', [])
-      const network = await provider.getNetwork()
-      if (Number(network.chainId) !== XDC_CHAIN_ID) {
-        try {
-          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: XDC_NETWORK_PARAMS.chainId }] })
-        } catch (err) {
-          if (err.code === 4902) await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [XDC_NETWORK_PARAMS] })
-          else throw err
-        }
-      }
-      const s = await provider.getSigner()
-      setAccount(await s.getAddress())
-      setSigner(s)
-    } catch (e) {
-      setConnError(e.message || String(e))
-    }
-  }
+  const { account, signer, error: connError, connect, disconnect } = useWallet()
+  const [creUrl, setCreUrl] = useState(
+    () => localStorage.getItem(CRE_URL_KEY) || import.meta.env.VITE_CRE_TRIGGER_URL || ''
+  )
+  const updateCreUrl = useCallback((val) => {
+    setCreUrl(val)
+    if (val) localStorage.setItem(CRE_URL_KEY, val)
+    else localStorage.removeItem(CRE_URL_KEY)
+  }, [])
 
   return (
     <div>
-      <h1 className="page-title">CRE / XDC API</h1>
+      <h1 className="page-title">CRE</h1>
       <p className="page-subtitle">
         Shows how a Chainlink Runtime Environment workflow reads from XDC via the HTTP capability (raw JSON-RPC).
         Write functions show encoded calldata and require MetaMask.
@@ -471,18 +521,46 @@ export default function CREPage() {
 
       <CRESimulate />
 
-      <div className="connect-bar" style={{ marginTop: 8 }}>
-        {!account ? (
-          <button className="btn btn-primary" onClick={connect}>Connect MetaMask (XDC) for Writes</button>
-        ) : (
-          <>
-            <span className="connected-addr">{account}</span>
-            <span className="network-badge" style={{ color: 'var(--green)', borderColor: 'var(--green)' }}>XDC Apothem</span>
-            <button className="btn btn-secondary btn-sm" onClick={() => { setAccount(null); setSigner(null) }}>Disconnect</button>
-          </>
+      {/* ── CRE Trigger URL ── */}
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="card-title">CRE Write Trigger (workflow-xdc)</div>
+        <p style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 10 }}>
+          Paste the HTTP trigger URL from <code>cre workflow deploy</code> for <strong>workflow-xdc</strong>.
+          Write functions will get a <strong>Send via CRE</strong> button that POSTs calldata to this URL.
+        </p>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            className="fn-input"
+            style={{ flex: 1 }}
+            placeholder="https://cre.chain.link/trigger/..."
+            value={creUrl}
+            onChange={e => updateCreUrl(e.target.value.trim())}
+          />
+          {creUrl && (
+            <button className="btn btn-secondary btn-sm" onClick={() => updateCreUrl('')}>Clear</button>
+          )}
+        </div>
+        {creUrl && (
+          <div style={{ fontSize: 11, color: 'var(--green)', marginTop: 6 }}>
+            ✓ CRE trigger URL set — write cards now show "Send via CRE"
+          </div>
         )}
       </div>
-      {connError && <div className="alert alert-warn">{connError}</div>}
+
+      {!account ? (
+        <div className="connect-bar" style={{ marginTop: 8 }}>
+          <button className="btn btn-primary" onClick={() => connect(XDC_NETWORK_PARAMS)}>
+            Connect MetaMask (XDC) for Writes
+          </button>
+          {connError && <span style={{ color: 'var(--warn)', fontSize: 12, marginLeft: 8 }}>{connError}</span>}
+        </div>
+      ) : (
+        <div className="connect-bar" style={{ marginTop: 8 }}>
+          <span className="connected-addr">{account}</span>
+          <span className="network-badge" style={{ color: 'var(--green)', borderColor: 'var(--green)' }}>XDC Apothem</span>
+          <button className="btn btn-secondary btn-sm" onClick={disconnect}>Disconnect</button>
+        </div>
+      )}
 
       {/* ── Token Info ── */}
       <div className="section-label">Token Info</div>
@@ -507,9 +585,9 @@ export default function CREPage() {
           <div style={{ flex: '1 1 0', minWidth: 0 }}><CREReadRow fnName="isVerified" /></div>
           <div style={{ flex: '1 1 0', minWidth: 0 }}><CREReadRow fnName="isFrozen" /></div>
         </div>
-        <CREWriteRow fnName="transfer"     signer={signer} />
-        <CREWriteRow fnName="approve"      signer={signer} />
-        <CREWriteRow fnName="transferFrom" signer={signer} />
+        <CREWriteRow fnName="transfer"     signer={signer} creUrl={creUrl} />
+        <CREWriteRow fnName="approve"      signer={signer} creUrl={creUrl} />
+        <CREWriteRow fnName="transferFrom" signer={signer} creUrl={creUrl} />
       </div>
 
       {/* ── Agent ── */}
@@ -522,13 +600,13 @@ export default function CREPage() {
         These show the encoded calldata CRE would prepare, and let you execute via MetaMask.
       </div>
       <div className="fn-list">
-        <CREWritePair a="mint"                b="burn"                     signer={signer} />
-        <CREWritePair a="pause"               b="unpause"                  signer={signer} />
-        <CREWritePair a="registerIdentity"    b="revokeIdentity"           signer={signer} />
-        <CREWritePair a="freezePartialTokens" b="unfreezePartialTokens"    signer={signer} />
-        <CREWriteRow fnName="setAddressFrozen" signer={signer} />
-        <CREWriteRow fnName="forcedTransfer"   signer={signer} />
-        <CREWriteRow fnName="recoveryAddress"  signer={signer} />
+        <CREWritePair a="mint"                b="burn"                     signer={signer} creUrl={creUrl} />
+        <CREWritePair a="pause"               b="unpause"                  signer={signer} creUrl={creUrl} />
+        <CREWritePair a="registerIdentity"    b="revokeIdentity"           signer={signer} creUrl={creUrl} />
+        <CREWritePair a="freezePartialTokens" b="unfreezePartialTokens"    signer={signer} creUrl={creUrl} />
+        <CREWriteRow fnName="setAddressFrozen" signer={signer} creUrl={creUrl} />
+        <CREWriteRow fnName="forcedTransfer"   signer={signer} creUrl={creUrl} />
+        <CREWriteRow fnName="recoveryAddress"  signer={signer} creUrl={creUrl} />
       </div>
 
       {/* ── Owner ── */}
@@ -538,7 +616,7 @@ export default function CREPage() {
       </p>
       <div className="fn-list">
         <CREReadRow fnName="hasRole" />
-        <CREWritePair a="grantRole" b="revokeRole" signer={signer} />
+        <CREWritePair a="grantRole" b="revokeRole" signer={signer} creUrl={creUrl} />
       </div>
     </div>
   )

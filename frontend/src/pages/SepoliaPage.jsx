@@ -5,6 +5,7 @@ import TokenInfoPanel from '../components/TokenInfoPanel.jsx'
 import ReadFunction from '../components/ReadFunction.jsx'
 import WriteFunction from '../components/WriteFunction.jsx'
 import { ROLES } from '../components/RoleSelector.jsx'
+import AddTokenButton from '../components/AddTokenButton.jsx'
 
 const ROLE_OPTIONS = { 0: ROLES.map(r => ({ label: r.name, value: r.bytes32 })) }
 
@@ -31,9 +32,10 @@ export default function SepoliaPage() {
       <h1 className="page-title">Sepolia</h1>
       <p className="page-subtitle">
         Contract: <code style={{ color: 'var(--accent2)', fontSize: 12 }}>{SEPOLIA_ADDRESS}</code>
+        {' '}<AddTokenButton address={SEPOLIA_ADDRESS} />
       </p>
 
-      {error && <div className="alert alert-warn">{error}</div>}
+      {error &&<div className="alert alert-warn">{error}</div>}
       {!account && (
         <div className="alert alert-info">
           Read functions work without a wallet. Connect MetaMask (top right) on Sepolia to use write functions.
